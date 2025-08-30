@@ -204,8 +204,16 @@
       <h2 style="margin:0 0 10px 0; color:#3a240a;">🧪 Janki-ness Score (Beta)</h2>
       <div class="grid">
         <div>
-          <label for="deckInput" class="muted">Paste your Tolaria/Moxfield-style list here (sideboard optional):</label>
-          <textarea id="deckInput" placeholder="e.g.\n4 Bayou\n2 Candelabra of Tawnos\n...\n\nSIDEBOARD:\n2 Avoid Fate\n...\n"></textarea>
+          <label for="deckInput" class="muted">Paste your Tolaria/ManaStack/Moxfield-style list here (sideboard optional):</label>
+          <textarea id="deckInput" placeholder="e.g. 
+
+3 Sword of the Ages 
+1 Sylvan Library 
+1 Vaevictis Asmadi 
+
+SIDEBOARD:
+1 Bazaar of Baghdad 
+3 Crumble"></textarea>
           <div class="small">or <input type="file" id="deckFile" accept=".txt,.dek,.dec"/> <button id="analyzeBtn" class="btn">Analyze Deck</button>
             <label style="margin-left:8px;"><input type="checkbox" id="includeSb"/> Include sideboard in score</label>
           </div>
@@ -550,7 +558,7 @@
       const distinctMed   = new Set(matchedMain.filter(x => x.total <= THRESH_MED  ).map(x => x.official)).size;
       const distinctLight = new Set(matchedMain.filter(x => x.total <= THRESH_LIGHT).map(x => x.official)).size;
 
-      const deepCopies = matchedMain.filter(x => x.total <= THRESH_DEEP)
+      const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT)
                                     .reduce((a,b)=> a + b.count, 0);
       const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
 
@@ -559,7 +567,7 @@
       const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
 
       // ----- Density bonus (curved, max +15) -----
-      const bonus = Math.round(15 * Math.pow(deepDensity / 100, 1.3));
+      const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1));
       const finalScore = Math.max(0, Math.min(100, baseScore + bonus));
 
       // Top 5 jankiest by single-copy weight
@@ -597,7 +605,7 @@
       else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.';
       else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.';
       else msg = '🛡️ More staple than spice. Dare to jank harder?';
-      if (r.bonus >= 10) msg += ' 🧪 Dense spice pocket detected.';
+      if (r.bonus >= 15) msg += ' 🧪 Dense spice pocket detected.';
       flavor.textContent = msg;
 
       badges.innerHTML = `
@@ -605,8 +613,8 @@
         <div class="small">💀 <b>Deep‑jank</b> (≤${THRESH_DEEP} Total): <b>${r.distinctDeep}</b></div>
         <div class="small">🧪 <b>Medium‑jank</b> (≤${THRESH_MED} Total): <b>${r.distinctMed}</b></div>
         <div class="small">🔥 <b>Light‑jank</b> (≤${THRESH_LIGHT} Total): <b>${r.distinctLight}</b></div>
-        <div class="small">📈 Deep‑jank density: <b>${r.deepDensity}%</b> of maindeck</div>
-        <div class="small">➕ Density bonus added: <b>+${r.bonus}</b> (max +15)</div>
+        <div class="small">📈 Jank Density: <b>${r.deepDensity}%</b> of maindeck</div>
+        <div class="small">➕ Density bonus added: <b>+${r.bonus}</b> (max +25)</div>
         <div class="small">🧮 Base score (pre‑bonus): <b>${r.baseScore}</b></div>
         <div class="small">🧾 Counted copies (main${r.copiesSide?'+side':''}): <b>${r.copiesMain}${r.copiesSide?` + ${r.copiesSide}`:''}</b></div>
       `;
