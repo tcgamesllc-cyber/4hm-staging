@@ -131,7 +131,6 @@
     .small { font-size:13px; color:#5a3816; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     .list { margin:6px 0 0 16px; }
-    .legend { margin-top:8px; background:#fff9e6; border:1px dashed #c8a96c; border-radius:10px; padding:8px 10px; font-size:13px; color:#5a3816; }
   </style>
 </head>
 <body>
@@ -201,7 +200,7 @@
 
     <!-- DECK SCORE (BETA) -->
     <div class="panel" id="scorePanel" style="margin-top:16px;">
-      <h2 style="margin:0 0 10px 0; color:#3a240a;">🧪 Janki-ness Score (Beta)</h2>
+      <h2 style="margin:0 0 10px 0; color:#3a240a;">🧪 Deck Score (Beta)</h2>
       <div class="grid">
         <div>
           <label for="deckInput" class="muted">Paste your Tolaria/Moxfield-style list here (sideboard optional):</label>
@@ -223,7 +222,6 @@
         </div>
         <div class="score-badge" style="flex:1;">
           <div><b>Top 5 Jankiest in Deck</b></div>
-          <div class="legend">“<b>Weight</b>” = scaled rarity score: <span class="mono">100 × (1 − log(Total+1) / log(Max+1))</span>. Higher = jankier.</div>
           <ol id="topJank" class="list"></ol>
         </div>
         <div class="score-badge" style="flex:1;">
@@ -481,11 +479,83 @@
         const bucket = toSide ? side : main;
         bucket.set(name, (bucket.get(name)||0) + (isFinite(n)?n:1));
       }
+      return {main, side};
+    }
+
+    function scoreDeck(parsed, includeSide){
+      const nameMap = NAME_MAP();
+      const toRow = new Map(); // officialName -> dataset row
+      for (const r of allRows){ toRow.set(r.card, r); }
+
+      // Expand map to array of {name,count}
+      function mapToArr(m){ return Array.from(m.entries()).map(([name,count])=>({name, count})); }
+
+      const mainArr = mapToArr(parsed.main);
+      const sideArr = mapToArr(parsed.side);
+
+      // Match against dataset
+      const matchedMain = [];
+      const unmatched = [];
+      function matchArr(arr, tag){
+        for (const item of arr){
+          const key = normName(item.name);
+          const official = nameMap.get(key);
+          if (!official){ unmatched.push(`${tag}: ${item.count} × ${item.name}`); continue; }
+          const row = toRow.get(official);
+          if (!row){ unmatched.push(`${tag}: ${item.count} × ${item.name}`); continue; }
+          matchedMain.push({ official, total: row.total, count: item.count });
+        }
+      }
+
+      matchArr(mainArr, 'Main');
+      const matchedSide = [];
+      function matchSideArr(arr){
+        for (const item of arr){
+          const key = normName(item.name);
+          const official = nameMap.get(key);
+          if (!official){ unmatched.push(`Side: ${item.count} × ${item.name}`); continue; }
+          const row = toRow.get(official);
+          if (!row){ unmatched.push(`Side: ${item.count} × ${item.name}`); continue; }
+          matchedSide.push({ official, total: row.total, count: item.count });
+        }
+      }
+      matchSideArr(sideArr);
+
+      // Jank weight per copy
+      const logMax = Math.log(MAX_TOTAL + 1);
+      const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax)); // 0..100
+
+      // Sum main (and optional side) copies
+      let copiesMain = 0, raw = 0;
+      for (const m of matchedMain){
+        copiesMain += m.count;
+        raw += m.count * weight(m.total);
+      }
+      let copiesSide = 0, rawSide = 0;
+      if (includeSide){
+        for (const s of matchedSide){ copiesSide += s.count; rawSide += s.count * weight(s.total); }
+      }
+
+      // Normalize relative to minimum legal maindeck (60)
+      const rawMax = 60 * 100; // 60 copies at weight 100
+      const score = clampNumber(((raw + rawSide) / rawMax) * 100, 0, 100);
+
+      // Badges
+      const thresholdDeep = 4; // community sweet spot
+      const distinctJank = new Set(matchedMain.filter(x => x.total <= thresholdDeep).map(x => x.official)).size;
+      const deepJankCopies = matchedMain.filter(x => x.total <= thresholdDeep).reduce((a,b)=>a+b.count,0);
+      const deepDensity = copiesMain ? Math.round(100 * deepJankCopies / copiesMain) : 0;
+
+      // Top 5 jankiest by single-copy weight
+      const allForTop = [...matchedMain].map(x => ({name:x.official, w: weight(x.total), total:x.total, count:x.count}));
+      allForTop.sort((a,b)=> b.w - a.w);
+      const top5 = allForTop.slice(0,5);
+
       return {
         score: Math.round(score),
         raw: Math.round(raw),
         copiesMain, copiesSide,
-        distinctJank, distinctMed, distinctLight, deepDensity,
+        distinctJank, deepDensity,
         top5,
         unmatched,
         matchedMain, matchedSide
@@ -513,8 +583,6 @@
 
       badges.innerHTML = `
         <div class="small">Distinct deep‑jank (≤4 Total): <b>${r.distinctJank}</b></div>
-        <div class="small">Distinct medium‑jank (≤10 Total): <b>${r.distinctMed}</b></div>
-        <div class="small">Distinct light‑jank (≤20 Total): <b>${r.distinctLight}</b></div>
         <div class="small">Deep‑jank density: <b>${r.deepDensity}%</b> of maindeck</div>
         <div class="small">Counted copies (main${r.copiesSide?'+side':''}): <b>${r.copiesMain}${r.copiesSide?` + ${r.copiesSide}`:''}</b></div>
       `;
