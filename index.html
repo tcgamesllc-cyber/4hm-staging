@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="robots" content="noindex,nofollow">
-  <title>4HM Jank-O-Meter — Themed + Mobile + Log Slider</title>
+  <title>4HM Jank-O-Meter — Themed + Mobile + Log Slider + Deck Score (Staging)</title>
 
   <!-- Data & table libs (defer to avoid race conditions) -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer crossorigin="anonymous"></script>
@@ -12,8 +11,10 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js" defer></script>
 
+  <meta name="robots" content="noindex,nofollow" />
+
   <style>
-    :root { --bg:#fdf6e3; --card:#f9f2dd; --ink:#2b1a08; --muted:#7c6a4c; }
+    :root { --bg:#fdf6e3; --card:#f9f2dd; --ink:#2b1a08; --muted:#7c6a4c; --accent:#8b4513; }
 
     /* === PAGE BACKGROUND WITH EMBEDDED BORDER (SVG data URI) === */
     html, body {
@@ -42,6 +43,9 @@
       background: center/600px no-repeat url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='800' height='800' viewBox='0 0 800 800'%3e%3cdefs%3e%3clinearGradient id='g' x1='0' x2='0' y1='0' y2='1'%3e%3cstop offset='0' stop-color='%23b89654'/%3e%3cstop offset='1' stop-color='%238d6e3f'/%3e%3c/linearGradient%3e%3c/defs%3e%3cg opacity='0.08'%3e%3ccircle cx='400' cy='400' r='300' fill='url(%23g)'/%3e%3ctext x='400' y='430' text-anchor='middle' font-size='220' font-family='Georgia, serif' fill='%23000'%3e4HM%3c/text%3e%3cpath d='M170 320c50 -90 230 -90 280 0' fill='none' stroke='%23000' stroke-width='14' stroke-linecap='round'/%3e%3cpath d='M350 320c50 -90 230 -90 280 0' fill='none' stroke='%23000' stroke-width='14' stroke-linecap='round'/%3e%3c/g%3e%3c/svg%3e");
     }
 
+    /* === STAGING ribbon (visible) === */
+    .ribbon { position:fixed; top:8px; right:-50px; transform:rotate(45deg); background:#b91c1c; color:#fff; padding:6px 60px; z-index:9999; font:600 14px system-ui; box-shadow:0 2px 6px rgba(0,0,0,0.3); }
+
     /* === Header parchment scroll === */
     header {
       background: radial-gradient(circle at top left, #fff9e6, #fdf6e3 60%, #f3e4c1);
@@ -69,7 +73,7 @@
     #thresholdNumber { width:90px; background:#fff9e6; color:#2b1a08; border:2px solid #c8a96c; border-radius:8px; padding:6px 8px; font-family:'Book Antiqua', Palatino, serif; box-shadow:inset 0 0 5px #d6b87a; }
 
     .muted { color:var(--muted); font-size:13px; }
-    .kpi { font-weight:700; color:#8b4513; }
+    .kpi { font-weight:700; color:var(--accent); }
     .actions { margin-left:auto; display:flex; gap:10px; }
     .btn { background:#fdf6e3; border:1px solid #c8a96c; color:#3a240a; padding:8px 12px; border-radius:10px; cursor:pointer; font-family:"Book Antiqua", Palatino, serif; }
     .btn:hover { background:#f8edd4; }
@@ -99,13 +103,13 @@
     #jankTable th, #jankTable td { white-space: normal; word-break: break-word; }
 
     @media (max-width: 640px) {
-      body { border-width: 16px; }             /* thinner parchment frame */
+      body { border-width: 16px; }
       header h1 { font-size: 24px; }
       header .sub { font-size: 13px; }
       .wrap { padding: 0 8px; }
       .panel { border-radius: 12px; padding: 12px; }
       .pill { padding: 6px 8px; }
-      input[type="range"] { width: 100%; }    /* slider stretches on mobile */
+      input[type="range"] { width: 100%; }
       #thresholdNumber { width: 72px; }
       table.dataTable { border-width: 1px; }
       table.dataTable thead th { font-size: 14px; }
@@ -116,18 +120,28 @@
       header h1 { font-size: 20px; }
       .pill { border-radius: 14px; }
     }
+
+    /* === Deck Score styles === */
+    #scorePanel .grid { display:grid; grid-template-columns: 1fr; gap:12px; }
+    #deckInput { width:100%; min-height:180px; box-sizing:border-box; background:#fff9e6; border:2px solid #c8a96c; border-radius:12px; padding:10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .score-hero { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+    .score-badge { background:#f2e6c6; border:1px solid #c8a96c; padding:10px 14px; border-radius:12px; }
+    .meter { height:12px; background:#eadfbe; border:1px solid #c8a96c; border-radius:999px; overflow:hidden; }
+    .meter > div { height:100%; background:linear-gradient(90deg,#6bcb6b,#ffd166,#ff9248,#ef476f); width:0%; }
+    .small { font-size:13px; color:#5a3816; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .list { margin:6px 0 0 16px; }
   </style>
 </head>
 <body>
+  <div class="ribbon">STAGING</div>
   <header>
     <h1>⚡ 4HM Jank-O-Meter ⚡</h1>
-    <div class="sub">Slide to set a maximum <b>Total Appearances</b>. Cards at or below the threshold are tagged as <i>Jank</i> (rarely used).</div>
+    <div class="sub">Slide to set a maximum <b>Total Appearances</b>. Cards at or below the threshold are tagged as <i>Jank</i> (rarely used). Now with <b>Deck Score (Beta)</b>.</div>
   </header>
-<div style="position:fixed;top:8px;right:-40px;transform:rotate(45deg);
-            background:#b91c1c;color:#fff;padding:6px 48px;z-index:9999;
-            font:600 13px system-ui">STAGING</div>
 
   <div class="wrap">
+    <!-- JANK FILTER PANEL -->
     <div class="panel">
       <div class="controls">
         <div class="row">
@@ -160,6 +174,7 @@
       </div>
     </div>
 
+    <!-- TABLE PANEL -->
     <div class="panel" style="margin-top:16px;">
       <div class="table-wrap">
         <table id="jankTable" class="display" style="width:100%">
@@ -180,6 +195,39 @@
         <p><b>About Jank-O-Meter:</b> This tool defines <i>Jank</i> as any legal 4HM card that has appeared in tournament decks fewer times than the chosen threshold. Adjust the slider to reveal the deepest jank of the format.</p>
         <p>📊 <b>Data Source:</b> <a href="https://docs.google.com/spreadsheets/d/1hrPpYnM7QcIL8IEz03ZZn0cUiRIAtAaBIRk1g6ru-1s/edit?usp=sharing" target="_blank" rel="noopener">4HM Tournament Card Usage Sheet</a> (Google Sheets, live CSV). Big thanks to <b>Jim</b> for compiling/cleaning the data.</p>
         <p id="lastUpdated">⏱️ <b>Last updated:</b> …</p>
+      </div>
+    </div>
+
+    <!-- DECK SCORE (BETA) -->
+    <div class="panel" id="scorePanel" style="margin-top:16px;">
+      <h2 style="margin:0 0 10px 0; color:#3a240a;">🧪 Deck Score (Beta)</h2>
+      <div class="grid">
+        <div>
+          <label for="deckInput" class="muted">Paste your Tolaria/Moxfield-style list here (sideboard optional):</label>
+          <textarea id="deckInput" placeholder="e.g.\n4 Bayou\n2 Candelabra of Tawnos\n...\n\nSIDEBOARD:\n2 Avoid Fate\n...\n"></textarea>
+          <div class="small">or <input type="file" id="deckFile" accept=".txt,.dek,.dec"/> <button id="analyzeBtn" class="btn">Analyze Deck</button>
+            <label style="margin-left:8px;"><input type="checkbox" id="includeSb"/> Include sideboard in score</label>
+          </div>
+        </div>
+        <div class="score-hero">
+          <div class="score-badge">
+            <div><b>Janki-ness Score</b> <span id="scoreValue" class="kpi">—</span>/100</div>
+            <div class="meter" aria-hidden="true"><div id="scoreBar"></div></div>
+            <div id="scoreFlavor" class="small">Paste a deck to score it.</div>
+          </div>
+          <div class="score-badge">
+            <div><b>Badges</b></div>
+            <div id="badges" class="small">—</div>
+          </div>
+        </div>
+        <div class="score-badge" style="flex:1;">
+          <div><b>Top 5 Jankiest in Deck</b></div>
+          <ol id="topJank" class="list"></ol>
+        </div>
+        <div class="score-badge" style="flex:1;">
+          <div><b>Unmatched / Notes</b></div>
+          <ul id="notes" class="list"></ul>
+        </div>
       </div>
     </div>
   </div>
@@ -247,6 +295,9 @@
       const uniques = new Set(allRows.map(r => `${r.set}||${r.card}`)).size;
       document.getElementById('meta').textContent = `Loaded ${allRows.length.toLocaleString()} rows (${uniques.toLocaleString()} unique cards). Max Total = ${MAX_TOTAL.toLocaleString()}.`;
       document.getElementById('lastUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`;
+
+      // Deck Score binder
+      bindDeckScore();
     }
 
     function clampNumber(v, min, max){ return Math.max(min, Math.min(max, v)); }
@@ -354,6 +405,201 @@
     async function copySharableLink(){
       try { await navigator.clipboard.writeText(location.href); alert('Sharable link copied to clipboard!'); }
       catch(e){ alert('Copy failed. You can manually copy the URL from the address bar.'); }
+    }
+
+    // ======================
+    // Deck Score (Beta)
+    // ======================
+
+    function bindDeckScore(){
+      const ta = document.getElementById('deckInput');
+      const file = document.getElementById('deckFile');
+      const btn = document.getElementById('analyzeBtn');
+      const includeSb = document.getElementById('includeSb');
+
+      file.addEventListener('change', async () => {
+        const f = file.files && file.files[0];
+        if (!f) return;
+        const text = await f.text();
+        ta.value = text; // show in textarea
+      });
+
+      btn.addEventListener('click', () => {
+        const text = (ta.value || '').trim();
+        if (!text){
+          alert('Paste a decklist first.');
+          return;
+        }
+        const parsed = parseDeck(text);
+        const report = scoreDeck(parsed, includeSb.checked);
+        renderDeckScore(report);
+      });
+    }
+
+    // Normalize names for matching
+    function normName(s){
+      return String(s || '')
+        .normalize('NFKD')
+        .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'") // curly → straight apostrophes
+        .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"') // curly quotes
+        .replace(/[\u2013\u2014]/g, '-') // en/em dash → hyphen
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+    }
+
+    function buildNameMap(){
+      const map = new Map();
+      for (const r of allRows){
+        const key = normName(r.card);
+        if (!map.has(key)) map.set(key, r.card); // first seen wins (official name)
+      }
+      return map;
+    }
+
+    const NAME_MAP = () => buildNameMap();
+
+    // Parse Tolaria/Moxfield-like list with optional SIDEBOARD:
+    function parseDeck(text){
+      const lines = text.split(/\r?\n/);
+      const main = new Map();
+      const side = new Map();
+      let toSide = false;
+      for (let raw of lines){
+        const line = raw.trim();
+        if (!line) continue;
+        if (/^side\s*board\s*:?/i.test(line)) { toSide = true; continue; }
+        // Format: "<count> <card name>" (count optional→ default 1 if starts with a name)
+        const m = line.match(/^(\d+)?\s*(.+)$/);
+        if (!m) continue;
+        let n = m[1] ? parseInt(m[1],10) : 1;
+        let name = m[2];
+        // drop set codes like "[LEB]" or parentheses suffixes sometimes exported
+        name = name.replace(/\[[^\]]+\]/g,'').replace(/\([^\)]*\)$/,'').trim();
+        const bucket = toSide ? side : main;
+        bucket.set(name, (bucket.get(name)||0) + (isFinite(n)?n:1));
+      }
+      return {main, side};
+    }
+
+    function scoreDeck(parsed, includeSide){
+      const nameMap = NAME_MAP();
+      const toRow = new Map(); // officialName -> dataset row
+      for (const r of allRows){ toRow.set(r.card, r); }
+
+      // Expand map to array of {name,count}
+      function mapToArr(m){ return Array.from(m.entries()).map(([name,count])=>({name, count})); }
+
+      const mainArr = mapToArr(parsed.main);
+      const sideArr = mapToArr(parsed.side);
+
+      // Match against dataset
+      const matchedMain = [];
+      const unmatched = [];
+      function matchArr(arr, tag){
+        for (const item of arr){
+          const key = normName(item.name);
+          const official = nameMap.get(key);
+          if (!official){ unmatched.push(`${tag}: ${item.count} × ${item.name}`); continue; }
+          const row = toRow.get(official);
+          if (!row){ unmatched.push(`${tag}: ${item.count} × ${item.name}`); continue; }
+          matchedMain.push({ official, total: row.total, count: item.count });
+        }
+      }
+
+      matchArr(mainArr, 'Main');
+      const matchedSide = [];
+      function matchSideArr(arr){
+        for (const item of arr){
+          const key = normName(item.name);
+          const official = nameMap.get(key);
+          if (!official){ unmatched.push(`Side: ${item.count} × ${item.name}`); continue; }
+          const row = toRow.get(official);
+          if (!row){ unmatched.push(`Side: ${item.count} × ${item.name}`); continue; }
+          matchedSide.push({ official, total: row.total, count: item.count });
+        }
+      }
+      matchSideArr(sideArr);
+
+      // Jank weight per copy
+      const logMax = Math.log(MAX_TOTAL + 1);
+      const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax)); // 0..100
+
+      // Sum main (and optional side) copies
+      let copiesMain = 0, raw = 0;
+      for (const m of matchedMain){
+        copiesMain += m.count;
+        raw += m.count * weight(m.total);
+      }
+      let copiesSide = 0, rawSide = 0;
+      if (includeSide){
+        for (const s of matchedSide){ copiesSide += s.count; rawSide += s.count * weight(s.total); }
+      }
+
+      // Normalize relative to minimum legal maindeck (60)
+      const rawMax = 60 * 100; // 60 copies at weight 100
+      const score = clampNumber(((raw + rawSide) / rawMax) * 100, 0, 100);
+
+      // Badges
+      const thresholdDeep = 4; // community sweet spot
+      const distinctJank = new Set(matchedMain.filter(x => x.total <= thresholdDeep).map(x => x.official)).size;
+      const deepJankCopies = matchedMain.filter(x => x.total <= thresholdDeep).reduce((a,b)=>a+b.count,0);
+      const deepDensity = copiesMain ? Math.round(100 * deepJankCopies / copiesMain) : 0;
+
+      // Top 5 jankiest by single-copy weight
+      const allForTop = [...matchedMain].map(x => ({name:x.official, w: weight(x.total), total:x.total, count:x.count}));
+      allForTop.sort((a,b)=> b.w - a.w);
+      const top5 = allForTop.slice(0,5);
+
+      return {
+        score: Math.round(score),
+        raw: Math.round(raw),
+        copiesMain, copiesSide,
+        distinctJank, deepDensity,
+        top5,
+        unmatched,
+        matchedMain, matchedSide
+      };
+    }
+
+    function renderDeckScore(r){
+      const scoreEl = document.getElementById('scoreValue');
+      const bar = document.getElementById('scoreBar');
+      const flavor = document.getElementById('scoreFlavor');
+      const badges = document.getElementById('badges');
+      const top = document.getElementById('topJank');
+      const notes = document.getElementById('notes');
+
+      scoreEl.textContent = r.score;
+      bar.style.width = r.score + '%';
+
+      let msg = '';
+      if (r.score >= 90) msg = '🌋 The Jank is STRONG with this one.';
+      else if (r.score >= 70) msg = '🧪 Maximum spice achieved — expect the unexpected.';
+      else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.';
+      else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.';
+      else msg = '🛡️ More staple than spice. Dare to jank harder?';
+      flavor.textContent = msg;
+
+      badges.innerHTML = `
+        <div class="small">Distinct deep‑jank (≤4 Total): <b>${r.distinctJank}</b></div>
+        <div class="small">Deep‑jank density: <b>${r.deepDensity}%</b> of maindeck</div>
+        <div class="small">Counted copies (main${r.copiesSide?'+side':''}): <b>${r.copiesMain}${r.copiesSide?` + ${r.copiesSide}`:''}</b></div>
+      `;
+
+      top.innerHTML = '';
+      for (const t of r.top5){
+        const li = document.createElement('li');
+        li.innerHTML = `${t.name} <span class="small">(Total ${t.total}, weight ${Math.round(t.w)})</span>`;
+        top.appendChild(li);
+      }
+
+      notes.innerHTML = '';
+      if (r.unmatched.length){
+        for (const n of r.unmatched){ const li = document.createElement('li'); li.textContent = `Unmatched: ${n}`; notes.appendChild(li); }
+      } else {
+        const li = document.createElement('li'); li.textContent = 'All cards matched the dataset.'; notes.appendChild(li);
+      }
     }
   </script>
 </body>
