@@ -201,7 +201,8 @@
 
     <!-- JANKI-NESS SCORE (BETA) -->
     <div class="panel" id="scorePanel" style="margin-top:16px;">
-      <h2 style="margin:0 0 10px 0; color:#3a240a;">🧪 Janki-ness Score (Beta)</h2>
+      <h2 style=\"margin:0 0 10px 0; color:#3a240a;\">🧪 Janki-ness Score (Beta) <span id=\"formulaToggle\" title=\"Tap to view formula\" style=\"cursor:pointer; color:#7a3e00; font-size:0.8em;\">❓</span></h2>
+      <div id=\"formulaExpand\" class=\"small\" style=\"display:none; margin:6px 0; padding:6px; border:1px dashed #c8a96c; border-radius:8px; background:#fff9e6; color:#444;\">Formula: Score = Raw (10×Ultra + 5×Deep + 3×Medium + 1×Light) + Density Bonus (Raw × JankDensity/20, max +25)</div>
       <div class="grid">
         <div>
           <label for="deckInput" class="muted">Paste your Tolaria/ManaStack/Moxfield-style list here (sideboard optional):</label>
@@ -209,13 +210,11 @@
 
 3 Sword of the Ages 
 1 Sylvan Library 
-1 Vaevictis Asmadi
-...            
+1 Vaevictis Asmadi 
 
 SIDEBOARD:
 1 Bazaar of Baghdad 
-3 Crumble
-..."></textarea>
+3 Crumble"></textarea>
           <div class="small">or <input type="file" id="deckFile" accept=".txt,.dek,.dec"/> <button id="analyzeBtn" class="btn">Analyze Deck</button>
             <label style="margin-left:8px;"><input type="checkbox" id="includeSb"/> Include sideboard in score</label>
           </div>
@@ -228,7 +227,8 @@ SIDEBOARD:
           </div>
           <div class="score-badge">
             <div><b>Badges</b></div>
-            <div id="badges" class="small">—</div>
+            <div id=\"badges\" class=\"small\">—<\/div>
+          <div id=\"formula\" class=\"small\" style=\"margin-top:6px; color:#444;\"></div>
           </div>
         </div>
         <div class="score-badge" style="flex:1;">
@@ -445,6 +445,12 @@ SIDEBOARD:
         const parsed = parseDeck(text);
         const report = scoreDeck(parsed, includeSb.checked);
         renderDeckScore(report);
+        document.getElementById('formulaToggle').addEventListener('click', ()=>{
+          const box = document.getElementById('formulaExpand');
+          box.style.display = box.style.display==='none'?'block':'none';
+        });
+        const f = document.getElementById('formula');
+        f.innerHTML = `<b>Formula:</b> Score = Raw (10×Ultra + 5×Deep + 3×Medium + 1×Light) + Density Bonus (Raw × JankDensity/20, max +25)`;
       });
     }
 
