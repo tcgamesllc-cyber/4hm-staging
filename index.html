@@ -378,8 +378,8 @@
       const mainArr = mapToArr(parsed.main); const sideArr = mapToArr(parsed.side);
 
       const matchedMain = []; const matchedSide = []; const unmatched = [];
-      for(const item of mainArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Main: ${item.count} × ${item.key}`); continue; } matchedMain.push({ official: nameMap.get(item.key)||item.key, total: row.total, count: item.count }); }
-      for(const item of sideArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Side: ${item.count} × ${item.key}`); continue; } matchedSide.push({ official: nameMap.get(item.key)||item.key, total: row.total, count: item.count }); }
+      for(const item of mainArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Main: ${item.count} × ${item.key}`); continue; } matchedMain.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: row.total, count: item.count }); }
+      for(const item of sideArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Side: ${item.count} × ${item.key}`); continue; } matchedSide.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: row.total, count: item.count }); }
 
       const logMax = Math.log(MAX_TOTAL + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
       let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; raw += m.count * weight(m.total); }
@@ -390,21 +390,42 @@
       const rawMax = 60 * 100; const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
       const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1)); const finalScore = Math.max(0, Math.min(100, baseScore + bonus));
 
+      // Top 10 list
       const allForTop = [...matchedMain].map(x => ({name:x.official, w: weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
 
-      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10 };
+      // Tier counts (distinct names, exclusive buckets)
+      const seen = new Set();
+      let ultra=0, deep=0, med=0, light=0;
+      for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_ULTRA) ultra++; else if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; }
+
+      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light}, copiesMain };
     }
 
     function renderDeckScore(r){
       const scoreEl = document.getElementById('scoreValue'); const bar = document.getElementById('scoreBar'); const flavor = document.getElementById('scoreFlavor'); const badges = document.getElementById('badges'); const top = document.getElementById('topJank');
       scoreEl.textContent = r.score; bar.style.width = r.score + '%';
-      let msg = ''; if (r.score >= 90) msg = '🌋 The Jank is STRONG with this one.'; else if (r.score >= 70) msg = '🧪 Maximum spice achieved — expect the unexpected.'; else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.'; else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.'; else msg = '🛡️ More staple than spice. Dare to jank harder?'; if (r.bonus >= 15) msg += ' 🧪 Dense spice pocket detected.'; flavor.textContent = msg;
+      let msg = '';
+      if (r.score >= 90) msg = '🌋 The Jank is STRONG with this one.';
+      else if (r.score >= 70) msg = '🧪 Maximum spice achieved — expect the unexpected.';
+      else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.';
+      else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.';
+      else msg = '🛡️ More staple than spice. Dare to jank harder?';
+      if (r.bonus >= 15) msg += ' 🧪 Dense spice pocket detected.';
+      flavor.textContent = msg;
+
       badges.innerHTML = `
-        <div class="small">📈 Jank Density: <b>${r.deepDensity}%</b> of maindeck</div>
-        <div class="small">➕ Density bonus added: <b>+${r.bonus}</b> (max +25)</div>
-        <div class="small">🧮 Base score (pre‑bonus): <b>${r.baseScore}</b></div>`;
+        <div>🧿 <b>Ultra‑jank (≤1 Total):</b> ${r.tierCounts.ultra}</div>
+        <div>💀 <b>Deep‑jank (≤4 Total):</b> ${r.tierCounts.deep}</div>
+        <div>🧪 <b>Medium‑jank (≤10 Total):</b> ${r.tierCounts.med}</div>
+        <div>🔥 <b>Light‑jank (≤20 Total):</b> ${r.tierCounts.light}</div>
+        <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div>
+        <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +25)</div>
+        <div>🧮 <b>Base score (pre‑bonus):</b> ${r.baseScore}</div>
+        <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>`;
+
       top.innerHTML = '';
       for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `${t.name}${badge?`<span class=\"tag\"> ${badge}</span>`:''}`; top.appendChild(li); }
+    }
     }
 
     // Validator (rules)
@@ -469,5 +490,13 @@
       counts.innerHTML = `<span class="tag">Main: ${res.mainCount}</span><span class="tag">Side: ${res.sideCount}</span><span class="tag">leg6 unique: ${res.leg6Distinct}/2</span><span class="tag">leg5 unique: ${res.leg5Distinct}/1</span>`;
     }
   </script>
+  <!-- ABOUT / FOOTER -->
+  <div class="panel">
+    <h3 style="margin:0 0 8px 0;">About Jank‑O‑Meter</h3>
+    <p class="small" style="margin:6px 0;">This tool defines <b>Jank</b> as any legal 4HM card that has appeared in tournament decks fewer times than the chosen threshold. Adjust the slider to reveal the deepest jank of the format.</p>
+    <p class="small" style="margin:6px 0;">📊 <b>Data Source:</b> 4HM Tournament Card Usage (Google Sheets → live CSV). Thanks to Jim for the curation.</p>
+    <p class="small" id="aboutUpdated" style="margin:6px 0;">⏱️ <b>Last updated:</b> …</p>
+  </div>
+  <script>try{ document.getElementById('aboutUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}` }catch(e){}</script>
 </body>
 </html>
