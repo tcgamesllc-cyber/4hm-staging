@@ -232,8 +232,13 @@
     function sliderToThreshold(s){ const k = Math.log(MAX_TOTAL + 1) / 100; return Math.round(Math.exp(k * s) - 1); }
     function thresholdToSlider(t){ const k = Math.log(MAX_TOTAL + 1) / 100; return Math.round(Math.log((t||0) + 1) / k); }
 
-    // boot
-    window.addEventListener('DOMContentLoaded', () => { boot(); });
+    // boot + early button binding so click works even if data load fails
+    window.addEventListener('DOMContentLoaded', () => {
+      // Always bind the button first so the UI responds even if data fetch hiccups
+      try { bindDeckTools(); } catch(e) { console.error('bindDeckTools error', e); }
+      // Then load data (async)
+      boot();
+    });
 
     async function boot(){
       try{
@@ -241,8 +246,11 @@
         ingestPool(pool);
         ingestBR(br); // extra flags if present
         initUI();
-        bindDeckTools();
-      }catch(e){ showErr(e); }
+      }catch(e){
+        showErr('Data load issue — you can still paste a deck and click Analyze. Details: '+ (e && e.message ? e.message : e));
+        console.error(e);
+      }
+    }catch(e){ showErr(e); }
     }
 
     function showErr(msg){ const el = document.getElementById('err'); el.style.display = 'block'; el.textContent = (msg && msg.message) ? msg.message : (typeof msg === 'string' ? msg : JSON.stringify(msg)); }
@@ -346,7 +354,24 @@
       const file = document.getElementById('deckFile');
       const btn = document.getElementById('analyzeBtn');
       const includeSb = document.getElementById('includeSb');
-      file?.addEventListener('change', async () => { const f = file.files && file.files[0]; if(!f) return; const text = await f.text(); ta.value = text; });
+      if(!btn) return;
+      file?.addEventListener('change', async () => { try{ const f = file.files && file.files[0]; if(!f) return; const text = await f.text(); ta.value = text; }catch(e){ console.error(e); }});
+      btn.addEventListener('click', () => {
+        try{
+          const text = (ta.value || '').trim();
+          if(!text){ alert('Paste a decklist first.'); return; }
+          const parsed = parseDeck(text);
+          const report = scoreDeck(parsed, includeSb?.checked);
+          renderDeckScore(report);
+          const res = validateDeck(parsed);
+          renderValidation(res);
+        }catch(e){
+          console.error(e);
+          showErr('Analyze failed: ' + (e && e.message ? e.message : e));
+          alert('Analyze failed. See error box above.');
+        }
+      });
+    });
       btn.addEventListener('click', () => { const text = (ta.value || '').trim(); if(!text){ alert('Paste a decklist first.'); return; } const parsed = parseDeck(text); const report = scoreDeck(parsed, includeSb.checked); renderDeckScore(report); const res = validateDeck(parsed); renderValidation(res); });
     }
 
