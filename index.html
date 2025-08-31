@@ -98,6 +98,7 @@
           </div>
         </div>
         <div class="muted" id="meta">Loading data…</div>
+        <div class="muted" id="topInfo" aria-live="polite"></div>
         <div id="err"></div>
       </div>
     </div>
@@ -131,8 +132,7 @@
         <div>
           <label for="deckInput" class="muted">Paste your Tolaria/ManaStack/Moxfield‑style list here (sideboard optional):</label>
           <textarea id="deckInput" placeholder="e.g. \n\n3 Sword of the Ages\n1 Sylvan Library\n1 Vaevictis Asmadi\n...            \n\nSIDEBOARD:\n1 Bazaar of Baghdad\n3 Crumble\n..."></textarea>
-          <div class="small">or <input type="file" id="deckFile" accept=".txt,.dek,.dec"/> <button id="analyzeBtn" class="btn">Analyze Deck</button>
-            <button id="validateBtn" class="btn">Validate Deck</button>
+          <div class="small">or <input type="file" id="deckFile" accept=".txt,.dek,.dec"/> <button id="analyzeBtn" class="btn">Analyze &amp; Validate Deck</button>
             <label style="margin-left:8px;"><input type="checkbox" id="includeSb"/> Include sideboard in score</label>
           </div>
         </div>
@@ -152,7 +152,7 @@
           </div>
         </div>
         <div class="score-badge" style="flex:1;">
-          <div><b>Top 5 Jankiest in Deck</b></div>
+          <div><b>Top 10 Jankiest in Deck</b></div>
           <ol id="topJank" class="list"></ol>
         </div>
         <div class="score-badge" style="flex:1;">
@@ -160,7 +160,7 @@
           <div id="valStatus" class="small">—</div>
           <ul id="valErrors" class="errlist"></ul>
           <div id="valCounts" class="small"></div>
-          <div class="note">Special limits: <b>6pluslegendary</b> — max <b>2</b> total and <b>≤2 unique</b>; <b>5legendary</b> — max <b>1</b> total and <b>≤1 unique</b>.</div>
+          <div class="note">Special limits: <b>6pluslegendary</b> — max <b>2</b> total and ≤2 unique; <b>5legendary</b> — max <b>1</b> total and ≤1 unique.</div>
         </div>
       </div>
     </div>
@@ -168,25 +168,23 @@
 
   <script>
     // === DATA SOURCES (staging) ===
-    // Unified pool with headers: name, set, 4hmMainDeck, 4hmSideBoard, 4hmTotal, (optional) 6pluslegendary, 5legendary, and a type column
-    const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv";
-    // B&R CSV
-    const BR_URL       = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQP2NPEcvsNl4wkBSKApw-opRIZ-C3rwFj51wJbMh1wYm_ci8y7o46gyfSubTbsfApvpoJpS2ysRohD/pub?output=csv";
+    const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv"; // full pool
+    const BR_URL       = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQP2NPEcvsNl4wkBSKApw-opRIZ-C3rwFj51wJbMh1wYm_ci8y7o46gyfSubTbsfApvpoJpS2ysRohD/pub?output=csv"; // B&R
 
     // === GLOBALS ===
-    let allRows = []; // table rows driven by 4hm* usage columns
+    let allRows = []; // usage rows for jank table
     let dataTable = null; let MAX_TOTAL = 0;
 
     // Deck validator data
     let LEGAL_CARDS = new Set();
     let BANNED = new Set();
     let RESTRICTED = new Set();
-    let EXTRA_TYPE_RESTRICTED = new Set(); // Enchantments and any Legendary are restricted to 1
+    let EXTRA_TYPE_RESTRICTED = new Set(); // Enchantments + any Legendary
     const BASIC_SET = new Set(["plains","island","swamp","mountain","forest"]);
 
     // Special legendary buckets (from card pool columns)
-    let SIX_PLUS_LEGENDARY = new Set(); // combined max 2 copies & ≤2 unique
-    let FIVE_LEGENDARY = new Set();     // combined max 1 copy & ≤1 unique
+    let SIX_PLUS_LEGENDARY = new Set(); // combined max 2 copies and ≤2 unique
+    let FIVE_LEGENDARY = new Set();     // combined max 1 copy and ≤1 unique
 
     const params = new URLSearchParams(location.search);
 
@@ -239,14 +237,13 @@
         type:  String(typeKey ? r[typeKey] : '').toLowerCase()
       }));
 
+      // Special legendary buckets from flags in pool
       const sixKey  = headers.find(h => /6\s*\+?\s*legendary|6pluslegendary/i.test(h));
       const fiveKey = headers.find(h => /5\s*legendary|fivelegendary/i.test(h));
-      SIX_PLUS_LEGENDARY.clear();
-      FIVE_LEGENDARY.clear();
+      SIX_PLUS_LEGENDARY.clear(); FIVE_LEGENDARY.clear();
       const truthy = v => { const s = String(v||'').trim().toLowerCase(); return s && s!=='0' && s!=='false' && s!=='no' && s!=='n'; };
       for (const r of rows){
-        const nm = normName((r[nameKey]||'').toString().trim());
-        if (!nm) continue;
+        const nm = normName((r[nameKey]||'').toString().trim()); if (!nm) continue;
         if (sixKey  && truthy(r[sixKey]))  SIX_PLUS_LEGENDARY.add(nm);
         if (fiveKey && truthy(r[fiveKey])) FIVE_LEGENDARY.add(nm);
       }
@@ -255,15 +252,10 @@
       const qThreshold = params.get('max');
       const qSet = params.get('set');
       const initialAbs = Math.min(qThreshold ? Number(qThreshold) : 4, MAX_TOTAL);
-      initUI(initialAbs);
-      populateSetFilter(allRows.map(r => r.set));
-      renderTable(initialAbs, qSet);
-
+      initUI(initialAbs); populateSetFilter(allRows.map(r => r.set)); renderTable(initialAbs, qSet);
       const uniques = new Set(allRows.map(r => `${r.set}||${r.card}`)).size;
-      const metaEl = document.getElementById('meta');
-      if (metaEl){ metaEl.textContent = `Loaded ${allRows.length.toLocaleString()} rows (${uniques.toLocaleString()} unique cards). Max Total = ${MAX_TOTAL.toLocaleString()}.`; }
-      const lu = document.getElementById('lastUpdated');
-      if (lu){ lu.innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`; }
+      document.getElementById('meta').textContent = `Loaded ${allRows.length.toLocaleString()} rows (${uniques.toLocaleString()} unique cards). Max Total = ${MAX_TOTAL.toLocaleString()}.`;
+      document.getElementById('lastUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`;
 
       // Build extra restricted set from types (All Enchantments and any Legendary are restricted to 1)
       EXTRA_TYPE_RESTRICTED = new Set();
@@ -277,15 +269,20 @@
     function ingestBR(rows){
       if (!rows || !rows.length) return;
       const headers = Object.keys(rows[0] || {});
-      let nameKey = headers.find(h => /^name$/i.test(h) || /card/i.test(h)) || headers[0];
-      const statusKeys = headers.filter(h => /status|type|note|flag/i.test(h));
+      const nameKey = headers.find(h => /^name$/i.test(h) || /card\s*name/i.test(h) || /^card$/i.test(h)) || headers[0];
+      const bannedKey = headers.find(h => /\bbanned\b/i.test(h));
+      const restrictedKey = headers.find(h => /\brestricted\b/i.test(h));
       BANNED.clear(); RESTRICTED.clear();
+      const truthy = v => { const s = String(v||'').trim().toLowerCase(); return s && s!=='0' && s!=='false' && s!=='no' && s!=='n' && s!=='na'; };
       for (const r of rows){
-        const nm = normName((r[nameKey]||'').toString().trim());
-        if (!nm) continue;
-        const hay = (statusKeys.length ? statusKeys.map(k => String(r[k]||'')).join(' ') : Object.values(r).join(' ')).toLowerCase();
-        if (/banned/.test(hay)) BANNED.add(nm);
-        if (/restricted/.test(hay)) RESTRICTED.add(nm);
+        const nm = normName((r[nameKey]||'').toString().trim()); if (!nm) continue;
+        let isB = false, isR = false;
+        if (bannedKey != null) isB = truthy(r[bannedKey]) || /banned/i.test(String(r[bannedKey]||''));
+        if (restrictedKey != null) isR = truthy(r[restrictedKey]) || /restricted/i.test(String(r[restrictedKey]||''));
+        if (!bannedKey && /banned/i.test(Object.values(r).join(' '))) isB = true;
+        if (!restrictedKey && /restricted/i.test(Object.values(r).join(' '))) isR = true;
+        if (isB) BANNED.add(nm);
+        if (isR) RESTRICTED.add(nm);
       }
     }
 
@@ -313,9 +310,17 @@
     function renderTable(threshold, setFilter){
       const rows = allRows.filter(r => r.total <= threshold && (!setFilter || r.set === setFilter));
       const data = rows.map(r => [r.set, r.card, r.main, r.side, r.total]);
-      if (dataTable){ dataTable.clear().rows.add(data).draw(); return; }
+      if (dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); return; }
       if (!window.jQuery || !jQuery.fn || !jQuery.fn.DataTable){ showErr('DataTables failed to load. Check CDN.'); return; }
-      dataTable = jQuery('#jankTable').DataTable({ data, columns: [ { title: 'Set' }, { title: 'Card' }, { title: 'Main Deck' }, { title: 'Sideboard' }, { title: 'Total' } ], order: [[4, 'asc'], [0, 'asc'], [1, 'asc']], pageLength: 25, deferRender: true, dom: 'tip' });
+      dataTable = jQuery('#jankTable').DataTable({ data, columns: [ { title: 'Set' }, { title: 'Card' }, { title: 'Main Deck' }, { title: 'Sideboard' }, { title: 'Total' } ], order: [[4, 'desc'], [0, 'asc'], [1, 'asc']], pageLength: 25, deferRender: true, dom: 'tip' });
+      const topInfo = document.getElementById('topInfo');
+      if (topInfo){
+        dataTable.on('draw', function(){
+          const info = dataTable.page.info();
+          topInfo.textContent = `Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`;
+        });
+        dataTable.draw();
+      }
     }
 
     function exportCSV(){ const v = Number(document.getElementById('thresholdNumber').value); const set = document.getElementById('setFilter').value || ''; const rows = allRows.filter(r => r.total <= v && (!set || r.set === set)); const header = ['Set','Card','Main Deck','Sideboard','Total']; const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total].join(','))); const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `4HM-jank-threshold-${v}${set?`-${set.replace(/\s+/g,'_')}`:''}.csv`; a.click(); }
@@ -331,19 +336,15 @@
       const ta = document.getElementById('deckInput');
       const file = document.getElementById('deckFile');
       const btn = document.getElementById('analyzeBtn');
-      const vbtn = document.getElementById('validateBtn');
       const includeSb = document.getElementById('includeSb');
 
       file.addEventListener('change', async () => { const f = file.files && file.files[0]; if (!f) return; const text = await f.text(); ta.value = text; });
 
       btn.addEventListener('click', () => {
         const text = (ta.value || '').trim(); if (!text){ alert('Paste a decklist first.'); return; }
-        const parsed = parseDeck(text); const report = scoreDeck(parsed, includeSb.checked); renderDeckScore(report);
-      });
-
-      vbtn.addEventListener('click', () => {
-        const text = (ta.value || '').trim(); if (!text){ alert('Paste a decklist first.'); return; }
-        const parsed = parseDeck(text); const res = validateDeck(parsed); renderValidation(res);
+        const parsed = parseDeck(text);
+        const report = scoreDeck(parsed, includeSb.checked); renderDeckScore(report);
+        const res = validateDeck(parsed); renderValidation(res);
       });
     }
 
@@ -365,8 +366,8 @@
       return {main, side};
     }
 
-    // === Scoring thresholds ===
     const THRESH_ULTRA = 1, THRESH_DEEP = 4, THRESH_MED = 10, THRESH_LIGHT = 20;
+    function tierOf(total){ if (total <= THRESH_ULTRA) return 'Ultra‑Jank'; if (total <= THRESH_DEEP) return 'Deep Jank'; if (total <= THRESH_MED) return 'Medium Jank'; if (total <= THRESH_LIGHT) return 'Light Jank'; return ''; }
 
     function scoreDeck(parsed, includeSide){
       const nameMap = NAME_MAP(); const toRow = new Map(); for (const r of allRows){ toRow.set(r.card, r); }
@@ -391,7 +392,7 @@
       const rawMax = 60 * 100; const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
       const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1)); const finalScore = Math.max(0, Math.min(100, baseScore + bonus));
 
-      const allForTop = [...matchedMain].map(x => ({name:x.official, w: weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top5 = allForTop.slice(0,5);
+      const allForTop = [...matchedMain].map(x => ({name:x.official, w: weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top5 = allForTop.slice(0,10);
 
       return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, raw: Math.round(raw), copiesMain, copiesSide, distinctUltra, distinctDeep, distinctMed, distinctLight, deepDensity, top5, unmatched };
     }
@@ -408,14 +409,14 @@
         <div class="small">📈 Jank Density: <b>${r.deepDensity}%</b> of maindeck</div>
         <div class="small">➕ Density bonus added: <b>+${r.bonus}</b> (max +25)</div>
         <div class="small">🧮 Base score (pre‑bonus): <b>${r.baseScore}</b></div>`;
-      top.innerHTML = ''; for (const t of r.top5){ const li = document.createElement('li'); li.textContent = t.name; top.appendChild(li); }
+      top.innerHTML = '';
+      for (const t of r.top5){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `${t.name} ${badge?`<span class=\"tag\">${badge}</span>`:''}`; top.appendChild(li); }
     }
 
     // ======================
-    //  DECK VALIDATOR (4HM + special legendary buckets + type-based restrictions)
+    //  DECK VALIDATOR (4HM + legendary buckets + type-based + CSV-restricted)
     // ======================
     function validateDeck(parsed){
-      // Combine counts across main + side for copy limits. Track per-bucket totals and uniques.
       const totals = new Map(); let mainCount = 0, sideCount = 0;
       for (const [n,c] of parsed.main.entries()){ mainCount += c; totals.set(normName(n), (totals.get(normName(n))||0) + c); }
       for (const [n,c] of parsed.side.entries()){ sideCount += c; totals.set(normName(n), (totals.get(normName(n))||0) + c); }
@@ -424,9 +425,7 @@
       if (mainCount < 60) errors.push(`Main deck has ${mainCount} cards (minimum is 60).`);
       if (sideCount > 15) errors.push(`Sideboard has ${sideCount} cards (maximum is 15).`);
 
-      let sixPlusTotal = 0, fiveTotal = 0;
-      const sixPlusDistinct = new Set();
-      const fiveDistinct = new Set();
+      let sixPlusTotal = 0, fiveTotal = 0; const sixPlusDistinct = new Set(); const fiveDistinct = new Set();
 
       for (const [key,count] of totals.entries()){
         if (BASIC_SET.has(key)) continue; // Basics are unlimited
