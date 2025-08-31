@@ -10,10 +10,14 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js" defer></script>
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
+
   <style>
-    body { font-family: "Book Antiqua", Palatino, serif; background:#fdf6e3; color:#2b1a08; margin:0; padding:0; }
+    body { font-family: "Book Antiqua", Palatino, serif; background:#fdf6e3; color:#2b1a08; margin:0; }
     header { background:#f9f2dd; border-bottom:2px solid #d6b87a; text-align:center; padding:20px; }
-    textarea { width:100%; min-height:180px; }
+    main { max-width:1000px; margin:0 auto; padding:20px; }
+    textarea { width:100%; min-height:180px; border:1px solid #ccc; padding:8px; border-radius:6px; }
+    button { padding:8px 14px; border:none; background:#d6b87a; border-radius:6px; font-weight:bold; cursor:pointer; }
+    button:hover { background:#c0a85f; }
     .valid { color:green; font-weight:700; }
     .invalid { color:red; font-weight:700; }
     .errlist { margin-left:20px; }
@@ -21,40 +25,43 @@
     .slider-container { margin:20px 0; text-align:center; }
     .quick-links { margin:10px 0; }
     #jankTable_wrapper { margin-top:20px; }
-    .small-note { font-size:0.8em; color:#555; margin-top:6px; }
+    .note { font-size:0.85em; color:#444; margin-top:10px; }
   </style>
 </head>
 <body>
   <header>
     <h1>⚡ 4HM Jank-O-Meter + Deck Validator — STAGING ⚠️</h1>
   </header>
+  <main>
+    <section>
+      <h2>Deck Analyzer</h2>
+      <textarea id="deckInput" placeholder="Paste your deck list here..."></textarea>
+      <br>
+      <button id="analyzeValidateBtn">Analyze & Validate Deck</button>
+      <label style="margin-left:8px;"><input type="checkbox" id="includeSb" checked> Include sideboard in score</label>
+      <div id="score">Score: --</div>
+      <div id="valStatus">—</div>
+      <ul id="valErrors" class="errlist"></ul>
+      <div id="topJank"></div>
+    </section>
 
-  <div style="padding:10px;">
-    <textarea id="deckInput" placeholder="Paste your deck list here..."></textarea>
-    <br>
-    <button id="analyzeValidateBtn">Analyze & Validate Deck</button>
-    <label style="margin-left:8px;"><input type="checkbox" id="includeSb" checked> Include sideboard in score</label>
-    <div id="score">Score: --</div>
-    <div id="valStatus">—</div>
-    <ul id="valErrors" class="errlist"></ul>
-    <div id="topJank"></div>
-  </div>
-
-  <div class="slider-container">
-    <label for="jankSlider">Jank Threshold: <span id="jankValue"></span></label><br>
-    <input type="range" id="jankSlider" min="1" max="20" value="4">
-    <div class="quick-links">
-      Quick Links: 
-      <a href="#" class="quick" data-v="1">≤1</a> |
-      <a href="#" class="quick" data-v="2">≤2</a> |
-      <a href="#" class="quick" data-v="4">≤4</a> |
-      <a href="#" class="quick" data-v="10">≤10</a> |
-      <a href="#" class="quick" data-v="20">≤20</a>
-    </div>
-    <div id="topInfo"></div>
-  </div>
-
-  <table id="jankTable" class="display" style="width:100%"></table>
+    <section class="slider-container">
+      <h2>Jank-O-Meter</h2>
+      <label for="jankSlider">Jank Threshold: <span id="jankValue"></span></label><br>
+      <input type="range" id="jankSlider" min="1" max="20" value="4">
+      <div class="quick-links">
+        Quick Links: 
+        <a href="#" class="quick" data-v="1">≤1</a> |
+        <a href="#" class="quick" data-v="2">≤2</a> |
+        <a href="#" class="quick" data-v="4">≤4</a> |
+        <a href="#" class="quick" data-v="10">≤10</a> |
+        <a href="#" class="quick" data-v="20">≤20</a>
+      </div>
+      <div id="topInfo"></div>
+      <table id="jankTable" class="display" style="width:100%"></table>
+      <div class="note">Special limits: <b>leg6orMore</b> — max <b>2 unique</b> cards from this group across the deck.</div>
+    </section>
+  </main>
 
   <script>
     const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv";
