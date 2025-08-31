@@ -8,14 +8,20 @@
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js" defer></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
   <style>
-    body { font-family: "Book Antiqua", Palatino, serif; background:#fdf6e3; color:#2b1a08; }
+    body { font-family: "Book Antiqua", Palatino, serif; background:#fdf6e3; color:#2b1a08; margin:0; padding:0; }
     header { background:#f9f2dd; border-bottom:2px solid #d6b87a; text-align:center; padding:20px; }
     textarea { width:100%; min-height:180px; }
     .valid { color:green; font-weight:700; }
     .invalid { color:red; font-weight:700; }
     .errlist { margin-left:20px; }
     .tag { display:inline-block; padding:2px 6px; margin-left:4px; background:#eee; border-radius:4px; font-size:0.8em; }
+    .slider-container { margin:20px 0; text-align:center; }
+    .quick-links { margin:10px 0; }
+    #jankTable_wrapper { margin-top:20px; }
+    .small-note { font-size:0.8em; color:#555; margin-top:6px; }
   </style>
 </head>
 <body>
@@ -23,16 +29,32 @@
     <h1>⚡ 4HM Jank-O-Meter + Deck Validator — STAGING ⚠️</h1>
   </header>
 
-  <div>
+  <div style="padding:10px;">
     <textarea id="deckInput" placeholder="Paste your deck list here..."></textarea>
     <br>
     <button id="analyzeValidateBtn">Analyze & Validate Deck</button>
-    <input type="checkbox" id="includeSb" checked> Include sideboard in score
+    <label style="margin-left:8px;"><input type="checkbox" id="includeSb" checked> Include sideboard in score</label>
     <div id="score">Score: --</div>
     <div id="valStatus">—</div>
     <ul id="valErrors" class="errlist"></ul>
     <div id="topJank"></div>
   </div>
+
+  <div class="slider-container">
+    <label for="jankSlider">Jank Threshold: <span id="jankValue"></span></label><br>
+    <input type="range" id="jankSlider" min="1" max="20" value="4">
+    <div class="quick-links">
+      Quick Links: 
+      <a href="#" class="quick" data-v="1">≤1</a> |
+      <a href="#" class="quick" data-v="2">≤2</a> |
+      <a href="#" class="quick" data-v="4">≤4</a> |
+      <a href="#" class="quick" data-v="10">≤10</a> |
+      <a href="#" class="quick" data-v="20">≤20</a>
+    </div>
+    <div id="topInfo"></div>
+  </div>
+
+  <table id="jankTable" class="display" style="width:100%"></table>
 
   <script>
     const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv";
@@ -44,6 +66,8 @@
     const BASIC_SET = new Set(["plains","island","swamp","mountain","forest"]);
 
     let MAX_TOTAL = 0;
+    let allRows = [];
+    let dataTable;
 
     function normName(n){ return n.toLowerCase().replace(/[^a-z0-9]/g,""); }
 
@@ -56,6 +80,7 @@
     async function boot(){
       const pool = await parseCSV(CARDPOOL_URL);
       ingestPool(pool);
+      initUI();
       document.getElementById('analyzeValidateBtn').addEventListener('click', ()=>{
         const deckText = document.getElementById('deckInput').value;
         const parsed = parseDeck(deckText);
@@ -77,6 +102,7 @@
         if(String(r.leg6orMore).toLowerCase()==="true") LEG6PLUS.add(nm);
         const t = Number(r["4hmTotal"]||r.total||0);
         if(t>MAX_TOTAL) MAX_TOTAL = t;
+        allRows.push({set:r.set||"", card:r.name, main:Number(r["4hmMainDeck"]||0), side:Number(r["4hmSideBoard"]||0), total:t});
       }
     }
 
@@ -164,8 +190,41 @@
       }
       arr.sort((a,b)=>b.w-a.w);
       const top=arr.slice(0,10);
+      const tier = (t)=> t<=1? 'Ultra‑Jank' : t<=4? 'Deep Jank' : t<=10? 'Medium Jank' : t<=20? 'Light Jank' : '';
       const div=document.getElementById('topJank');
-      div.innerHTML='<b>Top 10 Jankiest in Deck</b><ul>'+top.map(t=>`<li>${t.name} <span class="tag">${t.w.toFixed(1)}</span></li>`).join('')+'</ul>';
+      div.innerHTML='<b>Top 10 Jankiest in Deck</b><ul>'+top.map(t=>`<li>${t.name} ${tier(t.total)?`<span class="tag">${tier(t.total)}</span>`:""}</li>`).join('')+'</ul>';
+    }
+
+    function initUI(){
+      const slider=document.getElementById('jankSlider');
+      const val=document.getElementById('jankValue');
+      val.textContent=slider.value;
+      slider.addEventListener('input',()=>{ val.textContent=slider.value; renderTable(Number(slider.value)); });
+      document.querySelectorAll('.quick').forEach(a=>{
+        a.addEventListener('click',e=>{ e.preventDefault(); const v=Number(a.dataset.v); slider.value=v; val.textContent=v; renderTable(v); });
+      });
+      renderTable(Number(slider.value));
+    }
+
+    function renderTable(threshold){
+      const data=allRows.filter(r=>r.total<=threshold).map(r=>[r.set,r.card,r.main,r.side,r.total]);
+      if(dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); return; }
+      dataTable=jQuery('#jankTable').DataTable({
+        data,
+        columns:[{title:'Set'},{title:'Card'},{title:'Main Deck'},{title:'Sideboard'},{title:'Total'}],
+        order:[[4,'desc'],[0,'asc'],[1,'asc']],
+        pageLength:25,
+        deferRender:true,
+        dom:'tip'
+      });
+      const topInfo=document.getElementById('topInfo');
+      if(topInfo){
+        dataTable.on('draw',()=>{
+          const info=dataTable.page.info();
+          topInfo.textContent=`Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`;
+        });
+        dataTable.draw();
+      }
     }
 
     window.addEventListener('DOMContentLoaded', boot);
