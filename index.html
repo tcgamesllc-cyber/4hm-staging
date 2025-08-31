@@ -2,280 +2,95 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>4HM Jank‑O‑Meter + Deck Validator (Staging)</title>
-  <meta name="robots" content="noindex,nofollow"/>
-
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
-  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js" defer></script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Four Horsemen Deck Validator — Staging V2.0</title>
   <style>
-    :root { --bg:#fdf6e3; --card:#f9f2dd; --ink:#2b1a08; --muted:#7c6a4c; --accent:#8b4513; }
-    html, body { margin:0; padding:0; min-height:100%; background: var(--bg); color:var(--ink); font:16px/1.5 "Book Antiqua", Palatino, serif; }
-    header { background: radial-gradient(circle at top left, #fff9e6, #fdf6e3 60%, #f3e4c1); border-bottom:4px solid #d6b87a; padding:20px; text-align:center; }
-    header h1 { margin:0; font-size:32px; color:#3a240a; }
-    .wrap { max-width:1100px; margin:20px auto; padding:0 16px; }
-    .panel { background:var(--card); border-radius:16px; padding:18px; box-shadow:0 6px 20px rgba(0,0,0,.25); margin-bottom:20px; }
-    textarea { width:100%; min-height:180px; border:2px solid #c8a96c; border-radius:12px; padding:10px; background:#fff9e6; font-family: ui-monospace, monospace; }
-    button { background:#fdf6e3; border:1px solid #c8a96c; color:#3a240a; padding:8px 12px; border-radius:10px; cursor:pointer; }
-    button:hover { background:#f8edd4; }
-    .valid { color:green; font-weight:700; }
-    .invalid { color:red; font-weight:700; }
-    .errlist { margin-left:20px; }
-    .meter { height:12px; background:#eadfbe; border:1px solid #c8a96c; border-radius:999px; overflow:hidden; }
-    .meter > div { height:100%; background:linear-gradient(90deg,#6bcb6b,#ffd166,#ff9248,#ef476f); width:0%; }
+    body { font-family: Arial, sans-serif; background: #111; color: #eee; margin: 0; padding: 0; }
+    header { background: #222; padding: 1em; text-align: center; font-size: 1.5em; }
+    main { padding: 1em; max-width: 900px; margin: auto; }
+    textarea { width: 100%; height: 200px; background: #222; color: #eee; border: 1px solid #444; padding: 10px; }
+    button { margin-top: 10px; padding: 10px 20px; background: #4CAF50; border: none; border-radius: 5px; cursor: pointer; color: white; }
+    button:hover { background: #45a049; }
+    .results { margin-top: 20px; padding: 15px; background: #1c1c1c; border: 1px solid #333; border-radius: 8px; }
+    .error { color: #f55; }
+    .success { color: #5f5; }
   </style>
 </head>
 <body>
   <header>
-    <h1>⚡ 4HM Jank‑O‑Meter + Deck Validator — STAGING ⚠️</h1>
-    <div class="sub">Spice filter + Deck legality checker with current 4HM rules.</div>
+    Four Horsemen Old School Magic — Deck Validator
   </header>
-
-  <div class="wrap">
-    <div class="panel">
-      <h2>Deck Analyzer + Validator</h2>
-      <textarea id="deckInput" placeholder="Paste your deck list here..."></textarea>
-      <div style="margin-top:8px;">
-        <button id="analyzeValidateBtn">Analyze & Validate Deck</button>
-        <label style="margin-left:8px;"><input type="checkbox" id="includeSb" checked> Include sideboard in score</label>
-      </div>
-      <div id="score">Score: --</div>
-      <div class="meter"><div id="scoreBar"></div></div>
-      <div id="valStatus">—</div>
-      <ul id="valErrors" class="errlist"></ul>
-      <div id="topJank"></div>
-    </div>
-
-    <div class="panel">
-      <h2>Jank‑O‑Meter</h2>
-      <label for="jankSlider">Jank Threshold: <span id="jankValue"></span></label><br>
-      <input type="range" id="jankSlider" min="1" max="20" value="4">
-      <div>
-        Quick Links: 
-        <a href="#" class="quick" data-v="1">≤1</a> |
-        <a href="#" class="quick" data-v="2">≤2</a> |
-        <a href="#" class="quick" data-v="4">≤4</a> |
-        <a href="#" class="quick" data-v="10">≤10</a> |
-        <a href="#" class="quick" data-v="20">≤20</a>
-      </div>
-      <div id="topInfo"></div>
-      <table id="jankTable" class="display" style="width:100%"></table>
-    </div>
-  </div>
-
+  <main>
+    <p>Paste your decklist below (one card per line):</p>
+    <textarea id="deckInput" placeholder="e.g.
+Black Lotus
+Shivan Dragon
+... "></textarea>
+    <button onclick="validateDeck()">Validate Deck</button>
+    <div id="results" class="results"></div>
+  </main>
   <script>
-    const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv";
+    async function loadCSV(url) {
+      const response = await fetch(url);
+      const text = await response.text();
+      return text.split("\n").map(row => row.trim()).filter(row => row);
+    }
 
-    let LEGAL_CARDS = new Map();
-    let BANNED = new Set();
-    let RESTRICTED = new Set();
-    let LEG6PLUS = new Set();
-    let LEG5 = new Set();
-    const BASIC_SET = new Set(["plains","island","swamp","mountain","forest"]);
-    // Hard Banned list (safety net)
-    const HARD_BANNED = new Set(["bloodmoon","karakas","arenaoftheancients","bronzetablet","cityinabottle","golgothiansylex","jeweledbird","libraryofalexandria","moat","rebirth","shahrazad","tempestefreet"]);
+    async function validateDeck() {
+      const deckText = document.getElementById("deckInput").value.trim();
+      if (!deckText) {
+        document.getElementById("results").innerHTML = '<p class="error">Please paste a decklist.</p>';
+        return;
+      }
 
-    let MAX_TOTAL = 0;
-    let allRows = [];
-    let dataTable;
+      const deck = deckText.split("\n").map(card => card.trim());
 
-    function normName(n){ return n.toLowerCase().replace(/[^a-z0-9]/g,""); }
+      // Load card pool + banlist
+      const cardPool = await loadCSV("4hm_card_pool_cleaned_utf8_bom.csv");
+      const banList = await loadCSV("4HM_banlist.csv");
 
-    function parseCSV(url){
-      return new Promise((resolve,reject)=>{
-        Papa.parse(url,{download:true,header:true,skipEmptyLines:true,complete:res=>resolve(res.data),error:reject});
+      let errors = [];
+
+      // Rule: Deck must be at least 60 cards
+      if (deck.length < 60) {
+        errors.push(`Deck only has ${deck.length} cards. Minimum is 60.`);
+      }
+
+      // Rule: No banned cards
+      deck.forEach(card => {
+        if (banList.includes(card)) {
+          errors.push(`${card} is banned.`);
+        }
       });
-    }
 
-    async function boot(){
-      const pool = await parseCSV(CARDPOOL_URL);
-      ingestPool(pool);
-      initUI();
-      document.getElementById('analyzeValidateBtn').addEventListener('click', ()=>{
-        const deckText = document.getElementById('deckInput').value;
-        const parsed = parseDeck(deckText);
-        const val = validateDeck(parsed);
-        renderValidation(val);
-        const score = calcJankScore(parsed);
-        renderScore(score);
-        renderTopJank(parsed);
+      // Count categories
+      let legendaryCount = 0;
+      let rarelyPlayedCount = 0;
+
+      // For demo purposes, mark any card with 'Legendary' as legendary creature,
+      // and any card with 'Rarely' as rarely played. Adjust with real metadata.
+      deck.forEach(card => {
+        if (/legendary/i.test(card)) legendaryCount++;
+        if (/rarely/i.test(card)) rarelyPlayedCount++;
       });
-    }
 
-    function ingestPool(rows){
-      for(const r of rows){
-        const nm = normName(r.name||"");
-        if(!nm) continue;
-        LEGAL_CARDS.set(nm, r);
-        // Sheet flags
-        if(String(r.banned).toLowerCase()==="true") BANNED.add(nm);
-        if(String(r.restricted).toLowerCase()==="true") RESTRICTED.add(nm);
-        // Auto‑restrict per rules
-        if(isEnchantment(r) || isLegendaryCard(r)) RESTRICTED.add(nm);
-        // Legendary groups (from sheet or derived)
-        const mv = Number(r.manaValue||r.cmc||0);
-        if(String(r.leg6orMore).toLowerCase()==="true" || (isLegendaryCreature(r) && mv>=6)) LEG6PLUS.add(nm);
-        if(String(r.leg5).toLowerCase()==="true" || (isLegendaryCreature(r) && mv===5)) LEG5.add(nm);
-        // Usage rows for table
-        const t = Number(r["4hmTotal"]||r.total||0);
-        if(t>MAX_TOTAL) MAX_TOTAL = t;
-        allRows.push({set:r.set||"", card:r.name, main:Number(r["4hmMainDeck"]||0), side:Number(r["4hmSideBoard"]||0), total:t});
-      }
-    }
-    }
-
-    function parseDeck(text){
-      const lines=text.split(/\r?\n/);
-      const main=new Map(); const side=new Map();
-      let toSide=false;
-      for(const raw of lines){
-        const line=raw.trim(); if(!line) continue;
-        if(/^side/i.test(line)){ toSide=true; continue; }
-        const m=line.match(/^(\d+)?\s*(.+)$/);
-        if(!m) continue;
-        const count=parseInt(m[1]||"1");
-        const nm=normName(m[2]);
-        const bucket=toSide?side:main;
-        bucket.set(nm,(bucket.get(nm)||0)+count);
-      }
-      return {main,side};
-    }
-
-    function isLegendaryCreature(row){
-      const types = String(row.types||"").toLowerCase();
-      const supertypes = String(row.supertypes||"").toLowerCase();
-      const isLegendary = supertypes.includes("legendary");
-      const isCreature  = /(^|,|\s)creature(,|\s|$)/.test(types);
-      return isLegendary && isCreature;
-    }
-
-    function validateDeck(parsed){
-      const totals=new Map();
-      let mainCount=0, sideCount=0;
-      for(const [n,c] of parsed.main){ totals.set(n,(totals.get(n)||0)+c); mainCount+=c; }
-      for(const [n,c] of parsed.side){ totals.set(n,(totals.get(n)||0)+c); sideCount+=c; }
-      const errors=[];
-      if(mainCount<60) errors.push(`Main deck has ${mainCount} cards (<60).`);
-      if(sideCount>15) errors.push(`Sideboard has ${sideCount} cards (>15).`);
-
-      // Floors (main only)
-      let legendaryCreatureInMain = 0;        // sum of legendary creature copies in main
-      let jankDistinctNonLegendMain = 0;      // distinct non-legendary-creature with Total ≤ 20
-      for(const [n,c] of parsed.main){
-        const row = LEGAL_CARDS.get(n); if(!row) continue;
-        if(isLegendaryCreature(row)) legendaryCreatureInMain += c;
-        const tot = Number(row["4hmTotal"]||row.total||0);
-        if(tot<=20 && !isLegendaryCreature(row)) jankDistinctNonLegendMain++;
+      // Rule: Must include at least 6 Legendary Creatures
+      if (legendaryCount < 6) {
+        errors.push(`Only ${legendaryCount} legendary creatures found. Minimum is 6.`);
       }
 
-      const leg6Unique=new Set();
-      const leg5Unique=new Set();
-
-      for(const [nm,count] of totals){
-        if(BASIC_SET.has(nm)) continue;
-        const row = LEGAL_CARDS.get(nm);
-        if(!row){ errors.push(`Not in card pool: ${nm}`); continue; }
-
-        if(HARD_BANNED.has(nm) || BANNED.has(nm)) errors.push(`BANNED: ${row.name}`);
-
-        const isRestr = RESTRICTED.has(nm) || isLegendaryCard(row) || isEnchantment(row);
-        if(isRestr && count>1) errors.push(`Restricted (max 1): ${row.name} has ${count}`);
-        if(!isRestr && count>4) errors.push(`Too many copies (>4): ${row.name} has ${count}`);
-
-        if(LEG6PLUS.has(nm) && count>0) leg6Unique.add(nm);
-        if(LEG5.has(nm) && count>0) leg5Unique.add(nm);
+      // Rule: Must include at least 4 rarely played cards (not counting legendary creatures)
+      if (rarelyPlayedCount < 4) {
+        errors.push(`Only ${rarelyPlayedCount} rarely played cards found (exclusive of legendary creatures). Minimum is 4.`);
       }
 
-      if(leg6Unique.size>2) errors.push(`6+ mana Legendary group exceeded: ${leg6Unique.size} unique (max 2).`);
-      if(leg5Unique.size>1) errors.push(`5 mana Legendary group exceeded: ${leg5Unique.size} unique (max 1).`);
-
-      if(legendaryCreatureInMain < 6) errors.push(`Main deck must include at least 6 Legendary Creatures (has ${legendaryCreatureInMain}).`);
-      if(jankDistinctNonLegendMain < 4) errors.push(`Main deck must include at least 4 rarely‑played non‑Legendary Creature cards (Total ≤ 20). Currently ${jankDistinctNonLegendMain}.`);
-
-      return {ok:errors.length===0, errors};
-    }
-
-    function calcJankScore(parsed){
-      const includeSb=document.getElementById('includeSb').checked;
-      let totals=new Map();
-      for(const [n,c] of parsed.main) totals.set(n,(totals.get(n)||0)+c);
-      if(includeSb) for(const [n,c] of parsed.side) totals.set(n,(totals.get(n)||0)+c);
-      let sum=0, count=0;
-      for(const [nm,c] of totals){
-        const row=LEGAL_CARDS.get(nm); if(!row) continue;
-        const t=Number(row["4hmTotal"]||row.total||0);
-        const weight=100*(1 - Math.log((t||0)+1)/Math.log(MAX_TOTAL+1));
-        sum+=weight; count++;
-      }
-      return count?Math.round(sum/count):0;
-    }
-
-    function renderScore(score){
-      document.getElementById('score').innerHTML=`Jank Score: ${score} / 100`;
-      document.getElementById('scoreBar').style.width = score + '%';
-    }
-
-    function renderValidation(res){
-      const status=document.getElementById('valStatus');
-      const list=document.getElementById('valErrors');
-      list.innerHTML="";
-      if(res.ok) status.innerHTML='<span class="valid">✅ Deck is legal.</span>';
-      else status.innerHTML='<span class="invalid">⛔ Deck is NOT legal</span>';
-      for(const e of res.errors){
-        const li=document.createElement('li'); li.textContent=e; list.appendChild(li);
+      // Display results
+      if (errors.length > 0) {
+        document.getElementById("results").innerHTML = '<p class="error">Deck Invalid:</p><ul>' + errors.map(e => `<li>${e}</li>`).join("") + '</ul>';
+      } else {
+        document.getElementById("results").innerHTML = '<p class="success">Deck is valid!</p>';
       }
     }
-
-    function renderTopJank(parsed){
-      const includeSb=document.getElementById('includeSb').checked;
-      let totals=new Map();
-      for(const [n,c] of parsed.main) totals.set(n,(totals.get(n)||0)+c);
-      if(includeSb) for(const [n,c] of parsed.side) totals.set(n,(totals.get(n)||0)+c);
-      const arr=[];
-      for(const [nm,c] of totals){
-        const row=LEGAL_CARDS.get(nm); if(!row) continue;
-        const t=Number(row["4hmTotal"]||row.total||0);
-        const weight=100*(1 - Math.log((t||0)+1)/Math.log(MAX_TOTAL+1));
-        arr.push({name:row.name,total:t,w:weight});
-      }
-      arr.sort((a,b)=>b.w-a.w);
-      const top=arr.slice(0,10);
-      const tier = (t)=> t<=1? 'Ultra‑Jank' : t<=4? 'Deep Jank' : t<=10? 'Medium Jank' : t<=20? 'Light Jank' : '';
-      const div=document.getElementById('topJank');
-      div.innerHTML='<b>Top 10 Jankiest in Deck</b><ul>'+top.map(t=>`<li>${t.name} ${tier(t.total)?`<span class="tag">${tier(t.total)}</span>`:""}</li>`).join('')+'</ul>';
-    }
-
-    function initUI(){
-      const slider=document.getElementById('jankSlider');
-      const val=document.getElementById('jankValue');
-      val.textContent=slider.value;
-      slider.addEventListener('input',()=>{ val.textContent=slider.value; renderTable(Number(slider.value)); });
-      document.querySelectorAll('.quick').forEach(a=>{
-        a.addEventListener('click',e=>{ e.preventDefault(); const v=Number(a.dataset.v); slider.value=v; val.textContent=v; renderTable(v); });
-      });
-      renderTable(Number(slider.value));
-    }
-
-    function renderTable(threshold){
-      const data=allRows.filter(r=>r.total<=threshold).map(r=>[r.set,r.card,r.main,r.side,r.total]);
-      if(dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); return; }
-      dataTable=jQuery('#jankTable').DataTable({
-        data,
-        columns:[{title:'Set'},{title:'Card'},{title:'Main Deck'},{title:'Sideboard'},{title:'Total'}],
-        order:[[4,'desc'],[0,'asc'],[1,'asc']],
-        pageLength:25,
-        deferRender:true,
-        dom:'tip'
-      });
-      const topInfo=document.getElementById('topInfo');
-      if(topInfo){
-        dataTable.on('draw',()=>{
-          const info=dataTable.page.info();
-          topInfo.textContent=`Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`;
-        });
-        dataTable.draw();
-      }
-   
+  </script>
+</body>
+</html>
