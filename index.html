@@ -3,53 +3,57 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>4HM Jank-O-Meter + Deck Validator (Staging)</title>
+  <title>4HM Jank‑O‑Meter + Deck Validator (Staging)</title>
   <meta name="robots" content="noindex,nofollow"/>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
-  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js" defer></script>
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js" defer></script>
 
   <style>
-    body { font-family: "Book Antiqua", Palatino, serif; background:#fdf6e3; color:#2b1a08; margin:0; }
-    header { background:#f9f2dd; border-bottom:2px solid #d6b87a; text-align:center; padding:20px; }
-    main { max-width:1000px; margin:0 auto; padding:20px; }
-    textarea { width:100%; min-height:180px; border:1px solid #ccc; padding:8px; border-radius:6px; }
-    button { padding:8px 14px; border:none; background:#d6b87a; border-radius:6px; font-weight:bold; cursor:pointer; }
-    button:hover { background:#c0a85f; }
+    :root { --bg:#fdf6e3; --card:#f9f2dd; --ink:#2b1a08; --muted:#7c6a4c; --accent:#8b4513; }
+    html, body { margin:0; padding:0; min-height:100%; background: var(--bg); color:var(--ink); font:16px/1.5 "Book Antiqua", Palatino, serif; }
+    header { background: radial-gradient(circle at top left, #fff9e6, #fdf6e3 60%, #f3e4c1); border-bottom:4px solid #d6b87a; padding:20px; text-align:center; }
+    header h1 { margin:0; font-size:32px; color:#3a240a; }
+    .wrap { max-width:1100px; margin:20px auto; padding:0 16px; }
+    .panel { background:var(--card); border-radius:16px; padding:18px; box-shadow:0 6px 20px rgba(0,0,0,.25); margin-bottom:20px; }
+    textarea { width:100%; min-height:180px; border:2px solid #c8a96c; border-radius:12px; padding:10px; background:#fff9e6; font-family: ui-monospace, monospace; }
+    button { background:#fdf6e3; border:1px solid #c8a96c; color:#3a240a; padding:8px 12px; border-radius:10px; cursor:pointer; }
+    button:hover { background:#f8edd4; }
     .valid { color:green; font-weight:700; }
     .invalid { color:red; font-weight:700; }
     .errlist { margin-left:20px; }
-    .tag { display:inline-block; padding:2px 6px; margin-left:4px; background:#eee; border-radius:4px; font-size:0.8em; }
-    .slider-container { margin:20px 0; text-align:center; }
-    .quick-links { margin:10px 0; }
-    #jankTable_wrapper { margin-top:20px; }
-    .note { font-size:0.85em; color:#444; margin-top:10px; }
+    .meter { height:12px; background:#eadfbe; border:1px solid #c8a96c; border-radius:999px; overflow:hidden; }
+    .meter > div { height:100%; background:linear-gradient(90deg,#6bcb6b,#ffd166,#ff9248,#ef476f); width:0%; }
   </style>
 </head>
 <body>
   <header>
-    <h1>⚡ 4HM Jank-O-Meter + Deck Validator — STAGING ⚠️</h1>
+    <h1>⚡ 4HM Jank‑O‑Meter + Deck Validator — STAGING ⚠️</h1>
+    <div class="sub">Spice filter + Deck legality checker with current 4HM rules.</div>
   </header>
-  <main>
-    <section>
-      <h2>Deck Analyzer</h2>
+
+  <div class="wrap">
+    <div class="panel">
+      <h2>Deck Analyzer + Validator</h2>
       <textarea id="deckInput" placeholder="Paste your deck list here..."></textarea>
-      <br>
-      <button id="analyzeValidateBtn">Analyze & Validate Deck</button>
-      <label style="margin-left:8px;"><input type="checkbox" id="includeSb" checked> Include sideboard in score</label>
+      <div style="margin-top:8px;">
+        <button id="analyzeValidateBtn">Analyze & Validate Deck</button>
+        <label style="margin-left:8px;"><input type="checkbox" id="includeSb" checked> Include sideboard in score</label>
+      </div>
       <div id="score">Score: --</div>
+      <div class="meter"><div id="scoreBar"></div></div>
       <div id="valStatus">—</div>
       <ul id="valErrors" class="errlist"></ul>
       <div id="topJank"></div>
-    </section>
+    </div>
 
-    <section class="slider-container">
-      <h2>Jank-O-Meter</h2>
+    <div class="panel">
+      <h2>Jank‑O‑Meter</h2>
       <label for="jankSlider">Jank Threshold: <span id="jankValue"></span></label><br>
       <input type="range" id="jankSlider" min="1" max="20" value="4">
-      <div class="quick-links">
+      <div>
         Quick Links: 
         <a href="#" class="quick" data-v="1">≤1</a> |
         <a href="#" class="quick" data-v="2">≤2</a> |
@@ -59,9 +63,8 @@
       </div>
       <div id="topInfo"></div>
       <table id="jankTable" class="display" style="width:100%"></table>
-      <div class="note">Special limits: <b>leg6orMore</b> — max <b>2 unique</b> cards from this group across the deck.</div>
-    </section>
-  </main>
+    </div>
+  </div>
 
   <script>
     const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv";
@@ -70,6 +73,7 @@
     let BANNED = new Set();
     let RESTRICTED = new Set();
     let LEG6PLUS = new Set();
+    let LEG5 = new Set();
     const BASIC_SET = new Set(["plains","island","swamp","mountain","forest"]);
 
     let MAX_TOTAL = 0;
@@ -107,6 +111,7 @@
         if(String(r.banned).toLowerCase()==="true") BANNED.add(nm);
         if(String(r.restricted).toLowerCase()==="true") RESTRICTED.add(nm);
         if(String(r.leg6orMore).toLowerCase()==="true") LEG6PLUS.add(nm);
+        if(String(r.leg5).toLowerCase()==="true") LEG5.add(nm);
         const t = Number(r["4hmTotal"]||r.total||0);
         if(t>MAX_TOTAL) MAX_TOTAL = t;
         allRows.push({set:r.set||"", card:r.name, main:Number(r["4hmMainDeck"]||0), side:Number(r["4hmSideBoard"]||0), total:t});
@@ -145,7 +150,8 @@
         if(!LEGAL_CARDS.has(nm)) { errors.push(`Not in card pool: ${nm}`); continue; }
         if(BANNED.has(nm)) errors.push(`BANNED: ${LEGAL_CARDS.get(nm).name}`);
         if(RESTRICTED.has(nm) && count>1) errors.push(`Restricted (max1): ${LEGAL_CARDS.get(nm).name} has ${count}`);
-        if(!RESTRICTED.has(nm) && count>4) errors.push(`Too many copies (>4): ${LEGAL_CARDS.get(nm).name} has ${count}`);
+        if(LEG5.has(nm) && count>1) errors.push(`5‑cost Legendary restricted (max1): ${LEGAL_CARDS.get(nm).name} has ${count}`);
+        if(!RESTRICTED.has(nm) && !LEG5.has(nm) && count>4) errors.push(`Too many copies (>4): ${LEGAL_CARDS.get(nm).name} has ${count}`);
         if(LEG6PLUS.has(nm) && count>0) leg6Unique.add(nm);
       }
       if(leg6Unique.size>2) errors.push(`6+ mana Legendary group exceeded: ${leg6Unique.size} unique (max2).`);
@@ -170,6 +176,7 @@
 
     function renderScore(score){
       document.getElementById('score').innerHTML=`Jank Score: ${score} / 100`;
+      document.getElementById('scoreBar').style.width = score + '%';
     }
 
     function renderValidation(res){
