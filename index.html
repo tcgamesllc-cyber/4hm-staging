@@ -82,9 +82,9 @@
             Quick:
             <button class="btn btn-mini" data-th="1">≤1</button>
             <button class="btn btn-mini" data-th="2">≤2</button>
-            <button class="btn btn-mini" data-th="3">≤3</button>
             <button class="btn btn-mini" data-th="4">≤4</button>
-            <button class="btn btn-mini" data-th="8">≤8</button>
+            <button class="btn btn-mini" data-th="10">≤10</button>
+            <button class="btn btn-mini" data-th="20">≤20</button>
           </div>
           <div class="pill" title="Filter results by set">
             <label for="setFilter" class="muted">Filter by Set:</label>
@@ -126,7 +126,7 @@
 
     <!-- SCORE + VALIDATOR -->
     <div class="panel" id="scorePanel" style="margin-top:16px;">
-      <h2 style="margin:0 0 10px 0; color:#3a240a;">🧪 Janki‑ness Score & ✅ Deck Validator</h2>
+      <h2 style="margin:0 0 10px 0; color:#3a240a;">🧪 Jank Score & ✅ Deck Validator</h2>
       <div class="grid">
         <div>
           <label for="deckInput" class="muted">Paste your Tolaria/ManaStack/Moxfield‑style list here (sideboard optional):</label>
@@ -138,7 +138,7 @@
         </div>
         <div class="score-hero">
           <div class="score-badge">
-            <div><b>Janki‑ness Score</b> <span id="scoreValue" class="kpi">—</span>/100</div>
+            <div><b>Jank Score</b> <span id="scoreValue" class="kpi">—</span>/100</div>
             <div class="meter" aria-hidden="true"><div id="scoreBar"></div></div>
             <div id="scoreFlavor" class="small">Paste a deck to score it.</div>
           </div>
@@ -160,7 +160,7 @@
           <div id="valStatus" class="small">—</div>
           <ul id="valErrors" class="errlist"></ul>
           <div id="valCounts" class="small"></div>
-          <div class="note">Special limits: <b>6pluslegendary</b> — max <b>2</b> total across these cards; <b>5legendary</b> — max <b>1</b> total across these cards.</div>
+          <div class="note">Special limits: <b>6pluslegendary</b> — max <b>2</b> total and <b>≤2 unique</b>; <b>5legendary</b> — max <b>1</b> total and <b>≤1 unique</b>.</div>
         </div>
       </div>
     </div>
@@ -168,7 +168,7 @@
 
   <script>
     // === DATA SOURCES (staging) ===
-    // Full pool with headers: name, set, 4hmMainDeck, 4hmSideBoard, 4hmTotal, (optional) 6pluslegendary, 5legendary
+    // Unified pool with headers: name, set, 4hmMainDeck, 4hmSideBoard, 4hmTotal, (optional) 6pluslegendary, 5legendary, and a type column
     const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv";
     // B&R CSV
     const BR_URL       = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQP2NPEcvsNl4wkBSKApw-opRIZ-C3rwFj51wJbMh1wYm_ci8y7o46gyfSubTbsfApvpoJpS2ysRohD/pub?output=csv";
@@ -181,11 +181,12 @@
     let LEGAL_CARDS = new Set();
     let BANNED = new Set();
     let RESTRICTED = new Set();
+    let EXTRA_TYPE_RESTRICTED = new Set(); // Enchantments and any Legendary are restricted to 1
     const BASIC_SET = new Set(["plains","island","swamp","mountain","forest"]);
 
     // Special legendary buckets (from card pool columns)
-    let SIX_PLUS_LEGENDARY = new Set(); // combined max 2 copies across these
-    let FIVE_LEGENDARY = new Set();     // combined max 1 copy across these
+    let SIX_PLUS_LEGENDARY = new Set(); // combined max 2 copies & ≤2 unique
+    let FIVE_LEGENDARY = new Set();     // combined max 1 copy & ≤1 unique
 
     const params = new URLSearchParams(location.search);
 
@@ -220,17 +221,24 @@
     function ingestPool(rows){
       if (!rows || !rows.length) return;
       const headers = Object.keys(rows[0] || {}).map(h => (h||'').toString());
-      // NEW canonical headers
       const nameKey  = headers.find(h => /^name$/i.test(h)) || headers[0];
       const setKey   = headers.find(h => /^set$/i.test(h));
       const mainKey  = headers.find(h => /4hm\s*main(deck)?/i.test(h)) || headers.find(h => /main\s*deck/i.test(h));
       const sideKey  = headers.find(h => /4hm\s*side(board)?/i.test(h)) || headers.find(h => /side\s*board/i.test(h));
       const totalKey = headers.find(h => /4hm\s*total/i.test(h))        || headers.find(h => /^total$/i.test(h));
+      const typeKey  = headers.find(h => /type|typeline|card\s*type/i.test(h));
 
-      // Legality map (all names in the pool)
       LEGAL_CARDS = new Set(rows.map(r => (r[nameKey]||'').toString().trim()).filter(Boolean).map(normName));
 
-      // Legendary buckets
+      allRows = rows.filter(r => r && r[nameKey]).map(r => ({
+        set:   String(setKey ? r[setKey] : '').trim(),
+        card:  String(r[nameKey]).trim(),
+        main:  Number(r[mainKey])  || 0,
+        side:  Number(r[sideKey])  || 0,
+        total: Number(r[totalKey]) || 0,
+        type:  String(typeKey ? r[typeKey] : '').toLowerCase()
+      }));
+
       const sixKey  = headers.find(h => /6\s*\+?\s*legendary|6pluslegendary/i.test(h));
       const fiveKey = headers.find(h => /5\s*legendary|fivelegendary/i.test(h));
       SIX_PLUS_LEGENDARY.clear();
@@ -243,17 +251,7 @@
         if (fiveKey && truthy(r[fiveKey])) FIVE_LEGENDARY.add(nm);
       }
 
-      // Build usage data for table/slider directly from 4HM fields
-      allRows = rows.filter(r => r && r[nameKey]).map(r => ({
-        set:   String(setKey ? r[setKey] : '').trim(),
-        card:  String(r[nameKey]).trim(),
-        main:  Number(r[mainKey])  || 0,
-        side:  Number(r[sideKey])  || 0,
-        total: Number(r[totalKey]) || 0,
-      }));
-
       MAX_TOTAL = allRows.reduce((m, r) => Math.max(m, r.total), 0);
-
       const qThreshold = params.get('max');
       const qSet = params.get('set');
       const initialAbs = Math.min(qThreshold ? Number(qThreshold) : 4, MAX_TOTAL);
@@ -266,12 +264,19 @@
       if (metaEl){ metaEl.textContent = `Loaded ${allRows.length.toLocaleString()} rows (${uniques.toLocaleString()} unique cards). Max Total = ${MAX_TOTAL.toLocaleString()}.`; }
       const lu = document.getElementById('lastUpdated');
       if (lu){ lu.innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`; }
+
+      // Build extra restricted set from types (All Enchantments and any Legendary are restricted to 1)
+      EXTRA_TYPE_RESTRICTED = new Set();
+      for (const r of allRows){
+        const nm = normName(r.card);
+        const t = (r.type||'');
+        if (/legendary/.test(t) || /enchantment/.test(t)) EXTRA_TYPE_RESTRICTED.add(nm);
+      }
     }
 
     function ingestBR(rows){
       if (!rows || !rows.length) return;
       const headers = Object.keys(rows[0] || {});
-      // Accept either explicit 'name' or a generic 'Card' column
       let nameKey = headers.find(h => /^name$/i.test(h) || /card/i.test(h)) || headers[0];
       const statusKeys = headers.filter(h => /status|type|note|flag/i.test(h));
       BANNED.clear(); RESTRICTED.clear();
@@ -320,7 +325,7 @@
     async function copySharableLink(){ try { await navigator.clipboard.writeText(location.href); alert('Sharable link copied to clipboard!'); } catch(e){ alert('Copy failed. You can manually copy the URL.'); } }
 
     // ======================
-    //  JANKI‑NESS SCORE (Beta)
+    //  JANK SCORE (Beta)
     // ======================
     function bindDeckScore(){
       const ta = document.getElementById('deckInput');
@@ -407,10 +412,10 @@
     }
 
     // ======================
-    //  DECK VALIDATOR (4HM + special legendary buckets)
+    //  DECK VALIDATOR (4HM + special legendary buckets + type-based restrictions)
     // ======================
     function validateDeck(parsed){
-      // Combine counts across main + side for copy limits. Track per-bucket totals.
+      // Combine counts across main + side for copy limits. Track per-bucket totals and uniques.
       const totals = new Map(); let mainCount = 0, sideCount = 0;
       for (const [n,c] of parsed.main.entries()){ mainCount += c; totals.set(normName(n), (totals.get(normName(n))||0) + c); }
       for (const [n,c] of parsed.side.entries()){ sideCount += c; totals.set(normName(n), (totals.get(normName(n))||0) + c); }
@@ -420,22 +425,26 @@
       if (sideCount > 15) errors.push(`Sideboard has ${sideCount} cards (maximum is 15).`);
 
       let sixPlusTotal = 0, fiveTotal = 0;
+      const sixPlusDistinct = new Set();
+      const fiveDistinct = new Set();
 
       for (const [key,count] of totals.entries()){
         if (BASIC_SET.has(key)) continue; // Basics are unlimited
         if (!LEGAL_CARDS.has(key)) { errors.push(`Not in 4HM card pool: “${key}”`); continue; }
         if (BANNED.has(key)) { errors.push(`BANNED card: “${key}”`); continue; }
-        if (RESTRICTED.has(key) && count > 1) { errors.push(`Restricted (max 1): “${key}” has ${count}.`); }
-        if (!RESTRICTED.has(key) && count > 4) { errors.push(`Too many copies (max 4): “${key}” has ${count}.`); }
+        if ((RESTRICTED.has(key) || EXTRA_TYPE_RESTRICTED.has(key)) && count > 1) { errors.push(`Restricted (max 1): “${key}” has ${count}.`); }
+        if (!RESTRICTED.has(key) && !EXTRA_TYPE_RESTRICTED.has(key) && count > 4) { errors.push(`Too many copies (max 4): “${key}” has ${count}.`); }
 
-        if (SIX_PLUS_LEGENDARY.has(key)) sixPlusTotal += count;
-        if (FIVE_LEGENDARY.has(key)) fiveTotal += count;
+        if (SIX_PLUS_LEGENDARY.has(key)) { sixPlusTotal += count; sixPlusDistinct.add(key); }
+        if (FIVE_LEGENDARY.has(key)) { fiveTotal += count; fiveDistinct.add(key); }
       }
 
       if (sixPlusTotal > 2) errors.push(`6pluslegendary group limit exceeded: ${sixPlusTotal} total (max 2 across all cards in this group).`);
       if (fiveTotal > 1) errors.push(`5legendary group limit exceeded: ${fiveTotal} total (max 1 across all cards in this group).`);
+      if (sixPlusDistinct.size > 2) errors.push(`6pluslegendary unique limit exceeded: ${sixPlusDistinct.size} distinct cards (max 2 unique).`);
+      if (fiveDistinct.size > 1) errors.push(`5legendary unique limit exceeded: ${fiveDistinct.size} distinct cards (max 1 unique).`);
 
-      return { ok: errors.length === 0, errors, mainCount, sideCount, totals, sixPlusTotal, fiveTotal };
+      return { ok: errors.length === 0, errors, mainCount, sideCount, totals, sixPlusTotal, fiveTotal, sixPlusDistinct: sixPlusDistinct.size, fiveDistinct: fiveDistinct.size };
     }
 
     function renderValidation(res){
@@ -447,8 +456,10 @@
       else { status.innerHTML = `<span class="invalid">⛔ Deck is NOT legal — see issues below.</span>`; }
       for (const e of res.errors){ const li = document.createElement('li'); li.textContent = e; list.appendChild(li); }
       counts.innerHTML = `<span class="tag">Main: ${res.mainCount}</span><span class="tag">Side: ${res.sideCount}</span><span class="tag">Distinct: ${res.totals.size}</span>` +
-                         (res.sixPlusTotal!=null?` <span class="tag">6pluslegendary total: ${res.sixPlusTotal}/2</span>`:'') +
-                         (res.fiveTotal!=null?` <span class="tag">5legendary total: ${res.fiveTotal}/1</span>`:'');
+                         (res.sixPlusTotal!=null?` <span class=\"tag\">6pluslegendary total: ${res.sixPlusTotal}/2</span>`:'') +
+                         (res.fiveTotal!=null?` <span class=\"tag\">5legendary total: ${res.fiveTotal}/1</span>`:'') +
+                         (res.sixPlusDistinct!=null?` <span class=\"tag\">6pluslegendary unique: ${res.sixPlusDistinct}/2</span>`:'') +
+                         (res.fiveDistinct!=null?` <span class=\"tag\">5legendary unique: ${res.fiveDistinct}/1</span>`:'');
     }
   </script>
 </body>
