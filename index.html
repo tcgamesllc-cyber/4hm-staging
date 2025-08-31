@@ -6,7 +6,6 @@
   <title>4HM Jank‑O‑Meter + Deck Validator (Staging)</title>
   <meta name="robots" content="noindex,nofollow"/>
 
-  <!-- libs -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
@@ -14,7 +13,7 @@
 
   <style>
     :root { --bg:#fdf6e3; --card:#f9f2dd; --ink:#2b1a08; --muted:#7c6a4c; --accent:#8b4513; }
-    html, body { margin:0; padding:0; min-height:100%; box-sizing:border-box; background: var(--bg); color:var(--ink); font:16px/1.5 "Book Antiqua", Palatino, serif; }
+    html, body { margin:0; padding:0; min-height:100%; background: var(--bg); color:var(--ink); font:16px/1.5 "Book Antiqua", Palatino, serif; }
     header { background: radial-gradient(circle at top left, #fff9e6, #fdf6e3 60%, #f3e4c1); border-bottom:4px solid #d6b87a; padding:20px; text-align:center; }
     header h1 { margin:0; font-size:32px; color:#3a240a; }
     .wrap { max-width:1100px; margin:20px auto; padding:0 16px; }
@@ -27,7 +26,6 @@
     .errlist { margin-left:20px; }
     .meter { height:12px; background:#eadfbe; border:1px solid #c8a96c; border-radius:999px; overflow:hidden; }
     .meter > div { height:100%; background:linear-gradient(90deg,#6bcb6b,#ffd166,#ff9248,#ef476f); width:0%; }
-    .tag { display:inline-block; padding:2px 6px; border-radius:999px; border:1px solid #c8a96c; background:#fff9e6; margin-left:6px; font-size:12px; }
   </style>
 </head>
 <body>
@@ -39,7 +37,7 @@
   <div class="wrap">
     <div class="panel">
       <h2>Deck Analyzer + Validator</h2>
-      <textarea id="deckInput" placeholder="Paste your deck list here...\n\nSIDEBOARD:\n..."></textarea>
+      <textarea id="deckInput" placeholder="Paste your deck list here..."></textarea>
       <div style="margin-top:8px;">
         <button id="analyzeValidateBtn">Analyze & Validate Deck</button>
         <label style="margin-left:8px;"><input type="checkbox" id="includeSb" checked> Include sideboard in score</label>
@@ -71,14 +69,12 @@
   <script>
     const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv";
 
-    // Core stores
-    let LEGAL_CARDS = new Map(); // key -> full row
+    let LEGAL_CARDS = new Map();
     let BANNED = new Set();
-    let RESTRICTED = new Set(); // from sheet + type rules
-    let LEG6PLUS = new Set();   // legendary creatures with mv >= 6 (unique cap)
-    let LEG5ONLY = new Set();   // legendary creatures with mv == 5 (unique cap)
+    let RESTRICTED = new Set();
+    let LEG6PLUS = new Set();
+    let LEG5 = new Set();
     const BASIC_SET = new Set(["plains","island","swamp","mountain","forest"]);
-
     // Hard Banned list (safety net)
     const HARD_BANNED = new Set(["bloodmoon","karakas","arenaoftheancients","bronzetablet","cityinabottle","golgothiansylex","jeweledbird","libraryofalexandria","moat","rebirth","shahrazad","tempestefreet"]);
 
@@ -86,24 +82,12 @@
     let allRows = [];
     let dataTable;
 
-    function normName(n){ return String(n||"").normalize('NFKD').toLowerCase().replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'").replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"').replace(/[\u2013\u2014]/g, '-').replace(/[^a-z0-9]/g,""); }
+    function normName(n){ return n.toLowerCase().replace(/[^a-z0-9]/g,""); }
 
     function parseCSV(url){
       return new Promise((resolve,reject)=>{
-        Papa.parse(url,{download:true,header:true,skipEmptyLines:true,complete:res=>resolve(res.data||[]),error:reject});
+        Papa.parse(url,{download:true,header:true,skipEmptyLines:true,complete:res=>resolve(res.data),error:reject});
       });
-    }
-
-    function isLegendaryCreature(row){
-      const types = String(row.types||"").toLowerCase();
-      const supertypes = String(row.supertypes||"").toLowerCase();
-      const isLegendary = supertypes.includes("legendary");
-      const isCreature  = /(^|,|\s)creature(,|\s|$)/.test(types);
-      return isLegendary && isCreature;
-    }
-    function isEnchantment(row){
-      const types = String(row.types||"").toLowerCase();
-      return /(^|,|\s)enchantment(,|\s|$)/.test(types);
     }
 
     async function boot(){
@@ -123,23 +107,24 @@
 
     function ingestPool(rows){
       for(const r of rows){
-        const nmKey = normName(r.name);
-        if(!nmKey) continue;
-        LEGAL_CARDS.set(nmKey, r);
+        const nm = normName(r.name||"");
+        if(!nm) continue;
+        LEGAL_CARDS.set(nm, r);
         // Sheet flags
-        if(String(r.banned).toLowerCase()==="true") BANNED.add(nmKey);
-        if(String(r.restricted).toLowerCase()==="true") RESTRICTED.add(nmKey);
-        // Type-based restrictions per rules
-        if(isEnchantment(r) || String(r.supertypes||"").toLowerCase().includes("legendary")) RESTRICTED.add(nmKey);
-        // Legendary groups
+        if(String(r.banned).toLowerCase()==="true") BANNED.add(nm);
+        if(String(r.restricted).toLowerCase()==="true") RESTRICTED.add(nm);
+        // Auto‑restrict per rules
+        if(isEnchantment(r) || isLegendaryCard(r)) RESTRICTED.add(nm);
+        // Legendary groups (from sheet or derived)
         const mv = Number(r.manaValue||r.cmc||0);
-        if(isLegendaryCreature(r) && mv>=6) LEG6PLUS.add(nmKey);
-        if(isLegendaryCreature(r) && mv===5) LEG5ONLY.add(nmKey);
-        // Table data / usage
+        if(String(r.leg6orMore).toLowerCase()==="true" || (isLegendaryCreature(r) && mv>=6)) LEG6PLUS.add(nm);
+        if(String(r.leg5).toLowerCase()==="true" || (isLegendaryCreature(r) && mv===5)) LEG5.add(nm);
+        // Usage rows for table
         const t = Number(r["4hmTotal"]||r.total||0);
         if(t>MAX_TOTAL) MAX_TOTAL = t;
         allRows.push({set:r.set||"", card:r.name, main:Number(r["4hmMainDeck"]||0), side:Number(r["4hmSideBoard"]||0), total:t});
       }
+    }
     }
 
     function parseDeck(text){
@@ -148,15 +133,23 @@
       let toSide=false;
       for(const raw of lines){
         const line=raw.trim(); if(!line) continue;
-        if(/^side\s*board\s*:?/i.test(line)){ toSide=true; continue; }
+        if(/^side/i.test(line)){ toSide=true; continue; }
         const m=line.match(/^(\d+)?\s*(.+)$/);
         if(!m) continue;
         const count=parseInt(m[1]||"1");
-        const nmKey=normName(m[2]);
+        const nm=normName(m[2]);
         const bucket=toSide?side:main;
-        bucket.set(nmKey,(bucket.get(nmKey)||0)+count);
+        bucket.set(nm,(bucket.get(nm)||0)+count);
       }
       return {main,side};
+    }
+
+    function isLegendaryCreature(row){
+      const types = String(row.types||"").toLowerCase();
+      const supertypes = String(row.supertypes||"").toLowerCase();
+      const isLegendary = supertypes.includes("legendary");
+      const isCreature  = /(^|,|\s)creature(,|\s|$)/.test(types);
+      return isLegendary && isCreature;
     }
 
     function validateDeck(parsed){
@@ -168,57 +161,55 @@
       if(mainCount<60) errors.push(`Main deck has ${mainCount} cards (<60).`);
       if(sideCount>15) errors.push(`Sideboard has ${sideCount} cards (>15).`);
 
+      // Floors (main only)
+      let legendaryCreatureInMain = 0;        // sum of legendary creature copies in main
+      let jankDistinctNonLegendMain = 0;      // distinct non-legendary-creature with Total ≤ 20
+      for(const [n,c] of parsed.main){
+        const row = LEGAL_CARDS.get(n); if(!row) continue;
+        if(isLegendaryCreature(row)) legendaryCreatureInMain += c;
+        const tot = Number(row["4hmTotal"]||row.total||0);
+        if(tot<=20 && !isLegendaryCreature(row)) jankDistinctNonLegendMain++;
+      }
+
       const leg6Unique=new Set();
       const leg5Unique=new Set();
-      let legendaryCreatureInMain = 0;
-
-      // Jank requirement (main deck only): at least 4 distinct with Total ≤ 20
-      let jankDistinct = 0;
-      for(const [n,c] of parsed.main){ const row=LEGAL_CARDS.get(n); if(row){ const t=Number(row["4hmTotal"]||row.total||0); if(t<=20) jankDistinct++; } }
-      if(jankDistinct < 4) errors.push(`Main deck must include at least 4 rarely‑played cards (Total ≤ 20). Currently ${jankDistinct}.`);
 
       for(const [nm,count] of totals){
         if(BASIC_SET.has(nm)) continue;
         const row = LEGAL_CARDS.get(nm);
         if(!row){ errors.push(`Not in card pool: ${nm}`); continue; }
 
-        // hard + sheet banned
         if(HARD_BANNED.has(nm) || BANNED.has(nm)) errors.push(`BANNED: ${row.name}`);
 
-        const mv = Number(row.manaValue||row.cmc||0);
-        const isLegC = isLegendaryCreature(row);
-        const isEnchant = isEnchantment(row);
-        const isLegend = String(row.supertypes||"").toLowerCase().includes("legendary");
+        const isRestr = RESTRICTED.has(nm) || isLegendaryCard(row) || isEnchantment(row);
+        if(isRestr && count>1) errors.push(`Restricted (max 1): ${row.name} has ${count}`);
+        if(!isRestr && count>4) errors.push(`Too many copies (>4): ${row.name} has ${count}`);
 
-        // main-deck legendary creature count
-        const mainCopies = parsed.main.get(nm)||0;
-        if(isLegC && mainCopies>0) legendaryCreatureInMain += mainCopies;
-
-        // restricted copies
-        const isRestricted = RESTRICTED.has(nm) || isEnchant || isLegend;
-        if(isRestricted && count>1) errors.push(`Restricted (max 1): ${row.name} has ${count}`);
-        if(!isRestricted && count>4) errors.push(`Too many copies (>4): ${row.name} has ${count}`);
-
-        // group membership
-        if(isLegC && mv>=6) leg6Unique.add(nm);
-        if(isLegC && mv===5) leg5Unique.add(nm);
+        if(LEG6PLUS.has(nm) && count>0) leg6Unique.add(nm);
+        if(LEG5.has(nm) && count>0) leg5Unique.add(nm);
       }
 
-      if(legendaryCreatureInMain < 6) errors.push(`Main deck must include at least 6 Legendary Creatures (has ${legendaryCreatureInMain}).`);
       if(leg6Unique.size>2) errors.push(`6+ mana Legendary group exceeded: ${leg6Unique.size} unique (max 2).`);
       if(leg5Unique.size>1) errors.push(`5 mana Legendary group exceeded: ${leg5Unique.size} unique (max 1).`);
+
+      if(legendaryCreatureInMain < 6) errors.push(`Main deck must include at least 6 Legendary Creatures (has ${legendaryCreatureInMain}).`);
+      if(jankDistinctNonLegendMain < 4) errors.push(`Main deck must include at least 4 rarely‑played non‑Legendary Creature cards (Total ≤ 20). Currently ${jankDistinctNonLegendMain}.`);
 
       return {ok:errors.length===0, errors};
     }
 
-    // Jank score (keep simple average‑weight flavor for staging)
     function calcJankScore(parsed){
       const includeSb=document.getElementById('includeSb').checked;
       let totals=new Map();
       for(const [n,c] of parsed.main) totals.set(n,(totals.get(n)||0)+c);
       if(includeSb) for(const [n,c] of parsed.side) totals.set(n,(totals.get(n)||0)+c);
       let sum=0, count=0;
-      for(const [nm,c] of totals){ const row=LEGAL_CARDS.get(nm); if(!row) continue; const t=Number(row["4hmTotal"]||row.total||0); const weight=100*(1 - Math.log((t||0)+1)/Math.log(MAX_TOTAL+1)); sum+=weight; count++; }
+      for(const [nm,c] of totals){
+        const row=LEGAL_CARDS.get(nm); if(!row) continue;
+        const t=Number(row["4hmTotal"]||row.total||0);
+        const weight=100*(1 - Math.log((t||0)+1)/Math.log(MAX_TOTAL+1));
+        sum+=weight; count++;
+      }
       return count?Math.round(sum/count):0;
     }
 
@@ -233,7 +224,9 @@
       list.innerHTML="";
       if(res.ok) status.innerHTML='<span class="valid">✅ Deck is legal.</span>';
       else status.innerHTML='<span class="invalid">⛔ Deck is NOT legal</span>';
-      for(const e of res.errors){ const li=document.createElement('li'); li.textContent=e; list.appendChild(li); }
+      for(const e of res.errors){
+        const li=document.createElement('li'); li.textContent=e; list.appendChild(li);
+      }
     }
 
     function renderTopJank(parsed){
@@ -242,7 +235,12 @@
       for(const [n,c] of parsed.main) totals.set(n,(totals.get(n)||0)+c);
       if(includeSb) for(const [n,c] of parsed.side) totals.set(n,(totals.get(n)||0)+c);
       const arr=[];
-      for(const [nm,c] of totals){ const row=LEGAL_CARDS.get(nm); if(!row) continue; const t=Number(row["4hmTotal"]||row.total||0); const weight=100*(1 - Math.log((t||0)+1)/Math.log(MAX_TOTAL+1)); arr.push({name:row.name,total:t,w:weight}); }
+      for(const [nm,c] of totals){
+        const row=LEGAL_CARDS.get(nm); if(!row) continue;
+        const t=Number(row["4hmTotal"]||row.total||0);
+        const weight=100*(1 - Math.log((t||0)+1)/Math.log(MAX_TOTAL+1));
+        arr.push({name:row.name,total:t,w:weight});
+      }
       arr.sort((a,b)=>b.w-a.w);
       const top=arr.slice(0,10);
       const tier = (t)=> t<=1? 'Ultra‑Jank' : t<=4? 'Deep Jank' : t<=10? 'Medium Jank' : t<=20? 'Light Jank' : '';
@@ -255,7 +253,9 @@
       const val=document.getElementById('jankValue');
       val.textContent=slider.value;
       slider.addEventListener('input',()=>{ val.textContent=slider.value; renderTable(Number(slider.value)); });
-      document.querySelectorAll('.quick').forEach(a=>{ a.addEventListener('click',e=>{ e.preventDefault(); const v=Number(a.dataset.v); slider.value=v; val.textContent=v; renderTable(v); }); });
+      document.querySelectorAll('.quick').forEach(a=>{
+        a.addEventListener('click',e=>{ e.preventDefault(); const v=Number(a.dataset.v); slider.value=v; val.textContent=v; renderTable(v); });
+      });
       renderTable(Number(slider.value));
     }
 
@@ -272,12 +272,10 @@
       });
       const topInfo=document.getElementById('topInfo');
       if(topInfo){
-        dataTable.on('draw',()=>{ const info=dataTable.page.info(); topInfo.textContent=`Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`; });
+        dataTable.on('draw',()=>{
+          const info=dataTable.page.info();
+          topInfo.textContent=`Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`;
+        });
         dataTable.draw();
       }
-    }
-
-    window.addEventListener('DOMContentLoaded', boot);
-  </script>
-</body>
-</html>
+   
