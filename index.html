@@ -179,12 +179,22 @@
         </div>
       </div>
     </div>
+
+    <!-- ABOUT / FOOTER -->
+    <div class="panel">
+      <h3 style="margin:0 0 8px 0;">About Jank‑O‑Meter</h3>
+      <p class="small" style="margin:6px 0;">This tool defines <b>Jank</b> as any legal 4HM card that has appeared in tournament decks fewer times than the chosen threshold. Adjust the slider to reveal the deepest jank of the format.</p>
+      <p class="small" style="margin:6px 0;">📊 <b>Data Source:</b> 4HM Tournament Card Usage (Google Sheets → live CSV). Thanks to Jim for the curation.</p>
+      <p class="small" id="aboutUpdated" style="margin:6px 0;">⏱️ <b>Last updated:</b> …</p>
+    </div>
   </div>
 
   <script>
     // === DATA SOURCES ===
-    const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv"; // card pool w/ usage & types
-    const BR_URL       = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQP2NPEcvsNl4wkBSKApw-opRIZ-C3rwFj51wJbMh1wYm_ci8y7o46gyfSubTbsfApvpoJpS2ysRohD/pub?output=csv"; // B&R
+    const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv"; // CSV
+    const CARDPOOL_HTML = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pubhtml"; // fallback
+    const BR_URL       = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQP2NPEcvsNl4wkBSKApw-opRIZ-C3rwFj51wJbMh1wYm_ci8y7o46gyfSubTbsfApvpoJpS2ysRohD/pub?output=csv"; // CSV
+    const BR_HTML      = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQP2NPEcvsNl4wkBSKApw-opRIZ-C3rwFj51wJbMh1wYm_ci8y7o46gyfSubTbsfApvpoJpS2ysRohD/pubhtml"; // fallback
 
     // === STATE ===
     let allRows = []; // for jank table
@@ -222,69 +232,97 @@
         Papa.parse(url, { download:true, header:true, skipEmptyLines:'greedy', complete: res => resolve(res.data || []), error: reject });
       });
     }
+    async function parsePubHTML(url){
+      const res = await fetch(url, { credentials: 'omit' });
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const table = doc.querySelector('table');
+      if(!table) return [];
+      const rows = Array.from(table.querySelectorAll('tr'));
+      if(!rows.length) return [];
+      const headers = Array.from(rows[0].querySelectorAll('th,td')).map(th=>th.textContent.trim());
+      const out = [];
+      for(let i=1;i<rows.length;i++){
+        const cells = Array.from(rows[i].querySelectorAll('td')).map(td=>td.textContent.trim());
+        if(!cells.length) continue;
+        const obj = {};
+        headers.forEach((h,idx)=>{ obj[h] = cells[idx] ?? ''; });
+        out.push(obj);
+      }
+      return out;
+    }
 
-    // type helpers
     function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i').test(t||''); }
     function isLegendaryCard(row){ return String(row.supertypes||'').toLowerCase().includes('legendary'); }
     function isLegendaryCreature(row){ return isLegendaryCard(row) && typeHas(String(row.types),'creature'); }
     function isEnchantment(row){ return typeHas(String(row.types),'enchantment'); }
 
-    function sliderToThreshold(s){ const k = Math.log(MAX_TOTAL + 1) / 100; return Math.round(Math.exp(k * s) - 1); }
-    function thresholdToSlider(t){ const k = Math.log(MAX_TOTAL + 1) / 100; return Math.round(Math.log((t||0) + 1) / k); }
+    function sliderToThreshold(s){ const k = Math.log(Math.max(1,MAX_TOTAL) + 1) / 100; return Math.round(Math.exp(k * s) - 1); }
+    function thresholdToSlider(t){ const k = Math.log(Math.max(1,MAX_TOTAL) + 1) / 100; return Math.round(Math.log((t||0) + 1) / (k||1)); }
 
-    // boot + early button binding so click works even if data load fails
+    // boot + early binding
     window.addEventListener('DOMContentLoaded', () => {
-      // Always bind the button first so the UI responds even if data fetch hiccups
-      try { bindDeckTools(); } catch(e) { console.error('bindDeckTools error', e); }
-      // Then load data (async)
+      try { bindDeckTools(); } catch(e){ console.error(e); }
       boot();
     });
 
     async function boot(){
       try{
-        const [pool, br] = await Promise.all([ parseCSV(CARDPOOL_URL), parseCSV(BR_URL) ]);
+        let pool = await parseCSV(CARDPOOL_URL);
+        const poolHasHeaders = pool && pool.length && Object.keys(pool[0]).some(h=>/^name$/i.test(h)) && Object.keys(pool[0]).some(h=>/^set$/i.test(h));
+        if(!poolHasHeaders){
+          console.warn('CSV pool missing expected headers; falling back to pubhtml');
+          pool = await parsePubHTML(CARDPOOL_HTML);
+        }
+        let br = await parseCSV(BR_URL);
+        const brHasHeaders = br && br.length && Object.keys(br[0]).some(h=>/^name$|card\s*name|^card$/i.test(h));
+        if(!brHasHeaders){
+          console.warn('CSV B&R missing expected headers; falling back to pubhtml');
+          br = await parsePubHTML(BR_HTML);
+        }
         ingestPool(pool);
-        ingestBR(br); // extra flags if present
+        ingestBR(br);
+        if(MAX_TOTAL<1) MAX_TOTAL = 1; // guard
         initUI();
+        document.getElementById('lastUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`;
+        document.getElementById('aboutUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`;
       }catch(e){
         showErr('Data load issue — you can still paste a deck and click Analyze. Details: '+ (e && e.message ? e.message : e));
         console.error(e);
       }
-    }catch(e){ showErr(e); }
     }
 
     function showErr(msg){ const el = document.getElementById('err'); el.style.display = 'block'; el.textContent = (msg && msg.message) ? msg.message : (typeof msg === 'string' ? msg : JSON.stringify(msg)); }
 
     function ingestPool(rows){
-      if(!rows || !rows.length) return;
+      if(!rows?.length) return;
       const headers = Object.keys(rows[0]||{});
-      const nameKey  = headers.find(h => /^name$/i.test(h)) || headers[0];
-      const setKey   = headers.find(h => /^set$/i.test(h));
-      const mainKey  = headers.find(h => /4hm\s*main(deck)?/i.test(h)) || '4hmMainDeck';
-      const sideKey  = headers.find(h => /4hm\s*side(board)?/i.test(h)) || '4hmSideBoard';
-      const totalKey = headers.find(h => /4hm\s*total/i.test(h))        || '4hmTotal';
+      const nameKey  = headers.find(h => /^name$/i.test(h)) || headers.find(h=>/card\s*name/i.test(h)) || headers[0];
+      const setKey   = headers.find(h => /^set$/i.test(h)) || headers.find(h=>/set\s*name/i.test(h));
+      const mainKey  = headers.find(h => /4hm\s*main(deck)?/i.test(h)) || headers.find(h=>/main\s*deck/i.test(h)) || '4hmMainDeck';
+      const sideKey  = headers.find(h => /4hm\s*side(board)?/i.test(h)) || headers.find(h=>/side\s*board/i.test(h)) || '4hmSideBoard';
+      const totalKey = headers.find(h => /4hm\s*total/i.test(h)) || headers.find(h=>/^total$/i.test(h)) || '4hmTotal';
 
       for(const r of rows){
         const rawName = r[nameKey]; if(!rawName) continue; const key = normName(rawName);
         const set = String(setKey ? r[setKey] : '').trim();
-        const main = Number(r[mainKey]||0); const side = Number(r[sideKey]||0); const tot = Number(r[totalKey]||0);
+        const toNum = v => { const n = Number(String(v||'').replace(/,/g,'')); return isFinite(n) ? n : 0; };
+        const main = toNum(r[mainKey]); const side = toNum(r[sideKey]); const tot = toNum(r[totalKey]);
         NAME_MAP.set(key, String(rawName));
         LEGAL_CARDS.set(key, r);
         const mv = Number(r.manaValue||r.cmc||0);
-        // restrictions
         if(String(r.banned).toLowerCase()==='true') BANNED.add(key);
         if(String(r.restricted).toLowerCase()==='true') RESTRICTED.add(key);
         if(isEnchantment(r) || isLegendaryCard(r)) RESTRICTED.add(key);
         if(isLegendaryCreature(r) && mv>=6) LEG6PLUS.add(key);
         if(isLegendaryCreature(r) && mv===5) LEG5.add(key);
-
         if(tot>MAX_TOTAL) MAX_TOTAL = tot;
         allRows.push({ set, card: String(rawName), main, side, total: tot });
       }
     }
 
     function ingestBR(rows){
-      if(!rows || !rows.length) return;
+      if(!rows?.length) return;
       const headers = Object.keys(rows[0]||{});
       const nameKey = headers.find(h => /^name$/i.test(h) || /card\s*name/i.test(h) || /^card$/i.test(h)) || headers[0];
       const bannedKey = headers.find(h => /^banned$/i.test(h));
@@ -297,21 +335,19 @@
       }
     }
 
-    // UI
     function initUI(){
-      // slider + box
       const slider = document.getElementById('threshold');
       const box = document.getElementById('thresholdNumber');
       const label = document.getElementById('thresholdLabel');
       const qThreshold = params.get('max');
-      const initialAbs = Math.min(qThreshold ? Number(qThreshold) : 4, MAX_TOTAL);
-      slider.min = "0"; slider.max = "100"; slider.value = String(thresholdToSlider(initialAbs));
-      box.min = "0"; box.max = String(MAX_TOTAL); box.value = String(initialAbs);
+      const initialAbs = Math.min(qThreshold ? Number(qThreshold) : 4, Math.max(1,MAX_TOTAL));
+      slider.min = '0'; slider.max = '100'; slider.value = String(thresholdToSlider(initialAbs));
+      box.min = '0'; box.max = String(Math.max(1,MAX_TOTAL)); box.value = String(initialAbs);
       label.textContent = Number(initialAbs).toLocaleString();
       const syncFromSlider = (sVal) => { const abs = sliderToThreshold(Number(sVal)); box.value = String(abs); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs, document.getElementById('setFilter').value || ""); };
-      const syncFromBox = (bVal) => { const abs = Math.max(0, Math.min(Number(bVal)||0, MAX_TOTAL)); slider.value = String(thresholdToSlider(abs)); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs, document.getElementById('setFilter').value || ""); };
+      const syncFromBox = (bVal) => { const abs = Math.max(0, Math.min(Number(bVal)||0, Math.max(1,MAX_TOTAL))); slider.value = String(thresholdToSlider(abs)); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs, document.getElementById('setFilter').value || ""); };
       slider.addEventListener('input', e => syncFromSlider(e.target.value)); box.addEventListener('input', e => syncFromBox(e.target.value));
-      document.querySelectorAll('#quickPresets .btn-mini').forEach(b => b.addEventListener('click', () => { const abs = Math.min(Number(b.dataset.th), MAX_TOTAL); box.value = String(abs); slider.value = String(thresholdToSlider(abs)); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs, document.getElementById('setFilter').value || ""); }));
+      document.querySelectorAll('#quickPresets .btn-mini').forEach(b => b.addEventListener('click', () => { const abs = Math.min(Number(b.dataset.th), Math.max(1,MAX_TOTAL)); box.value = String(abs); slider.value = String(thresholdToSlider(abs)); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs, document.getElementById('setFilter').value || ""); }));
 
       // set filter
       populateSetFilter(allRows.map(r => r.set));
@@ -321,7 +357,6 @@
 
       document.getElementById('exportBtn').addEventListener('click', exportCSV);
       document.getElementById('copyLinkBtn').addEventListener('click', copySharableLink);
-      document.getElementById('lastUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`;
     }
 
     function populateSetFilter(sets){
@@ -335,11 +370,14 @@
     function renderTable(threshold, setFilter){
       const rows = allRows.filter(r => r.total <= threshold && (!setFilter || r.set === setFilter));
       const data = rows.map(r => [r.set, r.card, r.main, r.side, r.total]);
-      if(dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); return; }
-      dataTable = jQuery('#jankTable').DataTable({ data, columns: [ { title: 'Set' }, { title: 'Card' }, { title: 'Main Deck' }, { title: 'Sideboard' }, { title: 'Total' } ], order: [[4, 'desc'], [0, 'asc'], [1, 'asc']], pageLength: 25, deferRender: true, dom: 'tip' });
-      const topInfo = document.getElementById('topInfo');
-      if(topInfo){ dataTable.on('draw', function(){ const info = dataTable.page.info(); topInfo.textContent = `Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`; }); dataTable.draw(); }
-      document.getElementById('meta').textContent = `Loaded ${allRows.length.toLocaleString()} rows (${new Set(allRows.map(r => r.card)).size.toLocaleString()} unique cards). Max Total = ${MAX_TOTAL.toLocaleString()}.`;
+      if(dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); }
+      else {
+        dataTable = jQuery('#jankTable').DataTable({ data, columns: [ { title: 'Set' }, { title: 'Card' }, { title: 'Main Deck' }, { title: 'Sideboard' }, { title: 'Total' } ], order: [[4, 'desc'], [0, 'asc'], [1, 'asc']], pageLength: 25, deferRender: true, dom: 'tip' });
+        const topInfo = document.getElementById('topInfo');
+        if(topInfo){ dataTable.on('draw', function(){ const info = dataTable.page.info(); topInfo.textContent = `Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`; }); dataTable.draw(); }
+        const meta = document.getElementById('meta');
+        meta.textContent = `Loaded ${allRows.length.toLocaleString()} rows (${new Set(allRows.map(r => r.card)).size.toLocaleString()} unique cards). Max Total = ${Math.max(1,MAX_TOTAL).toLocaleString()}.`;
+      }
     }
 
     function exportCSV(){ const v = Number(document.getElementById('thresholdNumber').value); const set = document.getElementById('setFilter').value || ''; const rows = allRows.filter(r => r.total <= v && (!set || r.set === set)); const header = ['Set','Card','Main Deck','Sideboard','Total']; const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total].join(','))); const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `4HM-jank-threshold-${v}${set?`-${set.replace(/\s+/g,'_')}`:''}.csv`; a.click(); }
@@ -348,7 +386,6 @@
 
     async function copySharableLink(){ try { await navigator.clipboard.writeText(location.href); alert('Sharable link copied to clipboard!'); } catch(e){ alert('Copy failed. You can manually copy the URL.'); } }
 
-    // Deck tools
     function bindDeckTools(){
       const ta = document.getElementById('deckInput');
       const file = document.getElementById('deckFile');
@@ -358,21 +395,14 @@
       file?.addEventListener('change', async () => { try{ const f = file.files && file.files[0]; if(!f) return; const text = await f.text(); ta.value = text; }catch(e){ console.error(e); }});
       btn.addEventListener('click', () => {
         try{
-          const text = (ta.value || '').trim();
-          if(!text){ alert('Paste a decklist first.'); return; }
+          const text = (ta.value || '').trim(); if(!text){ alert('Paste a decklist first.'); return; }
           const parsed = parseDeck(text);
           const report = scoreDeck(parsed, includeSb?.checked);
           renderDeckScore(report);
           const res = validateDeck(parsed);
           renderValidation(res);
-        }catch(e){
-          console.error(e);
-          showErr('Analyze failed: ' + (e && e.message ? e.message : e));
-          alert('Analyze failed. See error box above.');
-        }
+        }catch(e){ console.error(e); showErr('Analyze failed: ' + (e && e.message ? e.message : e)); alert('Analyze failed. See error box above.'); }
       });
-    });
-      btn.addEventListener('click', () => { const text = (ta.value || '').trim(); if(!text){ alert('Paste a decklist first.'); return; } const parsed = parseDeck(text); const report = scoreDeck(parsed, includeSb.checked); renderDeckScore(report); const res = validateDeck(parsed); renderValidation(res); });
     }
 
     function parseDeck(text){
@@ -396,7 +426,6 @@
     function tierOf(total){ if (total <= THRESH_ULTRA) return 'Ultra‑Jank'; if (total <= THRESH_DEEP) return 'Deep Jank'; if (total <= THRESH_MED) return 'Medium Jank'; if (total <= THRESH_LIGHT) return 'Light Jank'; return ''; }
 
     function scoreDeck(parsed, includeSide){
-      // name map: norm -> display
       const toRow = new Map(); const nameMap = new Map();
       for(const r of allRows){ const k = normName(r.card); if(!nameMap.has(k)) nameMap.set(k, r.card); if(!toRow.has(k)) toRow.set(k, r); }
       function mapToArr(m){ return Array.from(m.entries()).map(([key,count])=>({key, count})); }
@@ -406,7 +435,7 @@
       for(const item of mainArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Main: ${item.count} × ${item.key}`); continue; } matchedMain.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: row.total, count: item.count }); }
       for(const item of sideArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Side: ${item.count} × ${item.key}`); continue; } matchedSide.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: row.total, count: item.count }); }
 
-      const logMax = Math.log(MAX_TOTAL + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
+      const logMax = Math.log(Math.max(1,MAX_TOTAL) + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
       let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; raw += m.count * weight(m.total); }
       let rawSide = 0; if (includeSide){ for (const s of matchedSide){ rawSide += s.count * weight(s.total); } }
 
@@ -415,12 +444,9 @@
       const rawMax = 60 * 100; const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
       const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1)); const finalScore = Math.max(0, Math.min(100, baseScore + bonus));
 
-      // Top 10 list
       const allForTop = [...matchedMain].map(x => ({name:x.official, w: weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
 
-      // Tier counts (distinct names, exclusive buckets)
-      const seen = new Set();
-      let ultra=0, deep=0, med=0, light=0;
+      const seen = new Set(); let ultra=0, deep=0, med=0, light=0;
       for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_ULTRA) ultra++; else if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; }
 
       return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light}, copiesMain };
@@ -430,14 +456,7 @@
       const scoreEl = document.getElementById('scoreValue'); const bar = document.getElementById('scoreBar'); const flavor = document.getElementById('scoreFlavor'); const badges = document.getElementById('badges'); const top = document.getElementById('topJank');
       scoreEl.textContent = r.score; bar.style.width = r.score + '%';
       let msg = '';
-      if (r.score >= 90) msg = '🌋 The Jank is STRONG with this one.';
-      else if (r.score >= 70) msg = '🧪 Maximum spice achieved — expect the unexpected.';
-      else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.';
-      else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.';
-      else msg = '🛡️ More staple than spice. Dare to jank harder?';
-      if (r.bonus >= 15) msg += ' 🧪 Dense spice pocket detected.';
-      flavor.textContent = msg;
-
+      if (r.score >= 90) msg = '🌋 The Jank is STRONG with this one.'; else if (r.score >= 70) msg = '🧪 Maximum spice achieved — expect the unexpected.'; else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.'; else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.'; else msg = '🛡️ More staple than spice. Dare to jank harder?'; if (r.bonus >= 15) msg += ' 🧪 Dense spice pocket detected.'; flavor.textContent = msg;
       badges.innerHTML = `
         <div>🧿 <b>Ultra‑jank (≤1 Total):</b> ${r.tierCounts.ultra}</div>
         <div>💀 <b>Deep‑jank (≤4 Total):</b> ${r.tierCounts.deep}</div>
@@ -447,10 +466,8 @@
         <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +25)</div>
         <div>🧮 <b>Base score (pre‑bonus):</b> ${r.baseScore}</div>
         <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>`;
-
       top.innerHTML = '';
       for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `${t.name}${badge?`<span class=\"tag\"> ${badge}</span>`:''}`; top.appendChild(li); }
-    }
     }
 
     // Validator (rules)
@@ -462,42 +479,32 @@
       if (mainCount < 60) errors.push(`Main deck has ${mainCount} cards (minimum is 60).`);
       if (sideCount > 15) errors.push(`Sideboard has ${sideCount} cards (maximum is 15).`);
 
-      // Floors (main deck only): ≥6 Legendary Creatures; ≥4 rarely‑played non‑Legendary Creature cards (Total ≤ 20)
-      let legendaryCreatureInMain = 0;
-      let jankDistinctNonLegendMain = 0;
-      const seenJank = new Set();
+      // Floors (main deck only)
+      let legendaryCreatureInMain = 0; const seenJank = new Set();
       for(const [key,count] of parsed.main.entries()){
         const row = LEGAL_CARDS.get(key); if(!row) continue;
         if(isLegendaryCreature(row)) legendaryCreatureInMain += count;
         const t = Number(row['4hmTotal']||row.total||0);
         if(t<=20 && !isLegendaryCreature(row)) { seenJank.add(key); }
       }
-      jankDistinctNonLegendMain = seenJank.size;
+      const jankDistinctNonLegendMain = seenJank.size;
 
-      // Unique caps
-      const leg6Unique = new Set();
-      const leg5Unique = new Set();
-
+      const leg6Unique = new Set(); const leg5Unique = new Set();
       for(const [key,count] of totals.entries()){
-        if (BASIC_SET.has(key)) continue; // basics unlimited
+        if (BASIC_SET.has(key)) continue;
         const row = LEGAL_CARDS.get(key);
         if(!row){ errors.push(`Not in 4HM card pool: “${key}”`); continue; }
-
         const disp = NAME_MAP.get(key) || String(row.name||row.card||key);
         if (HARD_BANNED.has(key) || BANNED.has(key)) errors.push(`BANNED card: ${disp}`);
-
         const isRestr = RESTRICTED.has(key) || isLegendaryCard(row) || isEnchantment(row);
         if (isRestr && count > 1) errors.push(`Restricted (max 1): ${disp} has ${count}`);
         if (!isRestr && count > 4) errors.push(`Too many copies (max 4): ${disp} has ${count}`);
-
         const mv = Number(row.manaValue||row.cmc||0);
         if (isLegendaryCreature(row) && mv >= 6) leg6Unique.add(key);
         if (isLegendaryCreature(row) && mv === 5) leg5Unique.add(key);
       }
-
       if (leg6Unique.size > 2) errors.push(`6+ CMC Legendary group exceeded: ${leg6Unique.size} unique (max 2).`);
       if (leg5Unique.size > 1) errors.push(`5 CMC Legendary group exceeded: ${leg5Unique.size} unique (max 1).`);
-
       if (legendaryCreatureInMain < 6) errors.push(`Main deck must include at least 6 Legendary Creatures (has ${legendaryCreatureInMain}).`);
       if (jankDistinctNonLegendMain < 4) errors.push(`Main deck must include at least 4 rarely‑played non‑Legendary Creature cards (Total ≤ 20). Currently ${jankDistinctNonLegendMain}.`);
 
@@ -514,14 +521,9 @@
       for(const e of res.errors){ const li = document.createElement('li'); li.textContent = e; list.appendChild(li); }
       counts.innerHTML = `<span class="tag">Main: ${res.mainCount}</span><span class="tag">Side: ${res.sideCount}</span><span class="tag">leg6 unique: ${res.leg6Distinct}/2</span><span class="tag">leg5 unique: ${res.leg5Distinct}/1</span>`;
     }
+
+    // footer times
+    try{ document.getElementById('lastUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`; document.getElementById('aboutUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`; }catch(e){}
   </script>
-  <!-- ABOUT / FOOTER -->
-  <div class="panel">
-    <h3 style="margin:0 0 8px 0;">About Jank‑O‑Meter</h3>
-    <p class="small" style="margin:6px 0;">This tool defines <b>Jank</b> as any legal 4HM card that has appeared in tournament decks fewer times than the chosen threshold. Adjust the slider to reveal the deepest jank of the format.</p>
-    <p class="small" style="margin:6px 0;">📊 <b>Data Source:</b> 4HM Tournament Card Usage (Google Sheets → live CSV). Thanks to Jim for the curation.</p>
-    <p class="small" id="aboutUpdated" style="margin:6px 0;">⏱️ <b>Last updated:</b> …</p>
-  </div>
-  <script>try{ document.getElementById('aboutUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}` }catch(e){}</script>
 </body>
 </html>
