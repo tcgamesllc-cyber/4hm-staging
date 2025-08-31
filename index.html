@@ -3,463 +3,172 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>4HM Jank‑O‑Meter + Deck Validator (Staging)</title>
+  <title>4HM Jank-O-Meter + Deck Validator (Staging)</title>
   <meta name="robots" content="noindex,nofollow"/>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
-  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js" defer></script>
-
   <style>
-    :root { --bg:#fdf6e3; --card:#f9f2dd; --ink:#2b1a08; --muted:#7c6a4c; --accent:#8b4513; --ok:#1f7a1f; --bad:#8b1a1a; }
-    html, body { margin:0; padding:0; min-height:100%; box-sizing:border-box; background: var(--bg); color:var(--ink); font:16px/1.5 "Book Antiqua", Palatino, serif; }
-    header { background: radial-gradient(circle at top left, #fff9e6, #fdf6e3 60%, #f3e4c1); border-bottom:4px solid #d6b87a; border-top:4px solid #d6b87a; box-shadow:0 4px 12px rgba(0,0,0,0.35); padding:24px 16px; text-align:center; position:relative; z-index:1; }
-    header h1 { margin:0; font-size:28px; color:#3a240a; text-shadow:1px 1px 0 #fff; }
-    header .sub { margin-top:6px; font-size:14px; color:#5a3816; }
-    .wrap { max-width:1100px; margin:20px auto 60px; padding:0 16px; position:relative; z-index:1; }
-    .panel { background:var(--card); border-radius:16px; padding:18px; box-shadow:0 6px 20px rgba(0,0,0,.25); }
-    .controls { display:grid; gap:12px; grid-template-columns: 1fr; align-items:center; }
-    .row { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
-    .pill { background:#f2e6c6; border:1px solid #c8a96c; color:var(--ink); padding:8px 12px; border-radius:999px; display:inline-flex; align-items:center; gap:10px; }
-    .btn { background:#fdf6e3; border:1px solid #c8a96c; color:#3a240a; padding:8px 12px; border-radius:10px; cursor:pointer; font-family:"Book Antiqua", Palatino, serif; }
-    .btn:hover { background:#f8edd4; }
-    .btn-mini { padding: 4px 8px; font-size: 13px; border-radius: 8px; }
-    .muted { color:var(--muted); font-size:13px; }
-    .kpi { font-weight:700; color:var(--accent); }
-    .small { font-size:13px; color:#5a3816; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-
-    input[type="range"] { -webkit-appearance:none !important; appearance:none !important; width:260px; height:10px; border-radius:5px; background:linear-gradient(to right, #d6b87a, #b38b4d); outline:none; margin:0 8px; cursor:pointer; border:1px solid #8b5a2b; box-shadow:inset 0 0 4px rgba(0,0,0,.4); }
-    input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none !important; appearance:none !important; width:20px; height:20px; border-radius:50%; background:radial-gradient(circle at 30% 30%, #d6b87a, #8b5a2b); border:2px solid #5c3b16; box-shadow:inset 0 0 6px #d6b87a, 0 0 2px #000; cursor:pointer; transition:transform .05s ease-in-out; }
-
-    table.dataTable { background:#fdf6e3; border:2px solid #d6b87a; border-radius:12px; overflow:hidden; }
-
-    /* Score */
-    #deckInput { width:100%; min-height:180px; box-sizing:border-box; background:#fff9e6; border:2px solid #c8a96c; border-radius:12px; padding:10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .score-hero { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
-    .score-badge { background:#f2e6c6; border:1px solid #c8a96c; padding:10px 14px; border-radius:12px; }
-    .meter { height:12px; background:#eadfbe; border:1px solid #c8a96c; border-radius:999px; overflow:hidden; }
-    .meter > div { height:100%; background:linear-gradient(90deg,#6bcb6b,#ffd166,#ff9248,#ef476f); width:0%; }
-
-    /* Validator */
-    .valid { color:var(--ok); font-weight:700; }
-    .invalid { color:var(--bad); font-weight:700; }
-    .errlist { margin:6px 0 0 18px; }
-    .tag { display:inline-block; padding:2px 6px; border-radius:999px; border:1px solid #c8a96c; background:#fff9e6; margin-right:6px; font-size:12px; }
-    .note { font-size:12px; color:#6b5b3a; margin-top:6px; }
-
-    details.formula-toggle{margin-top:6px}
-    details.formula-toggle summary{cursor:pointer; padding:8px 0; outline:none; list-style:none}
-    details.formula-toggle summary::-webkit-details-marker{display:none}
-    .chev{display:inline-block; transform:rotate(0deg); transition:transform .2s ease}
-    details[open] .chev{transform:rotate(90deg)}
-
-    @media (max-width: 640px) {
-      header h1 { font-size: 22px; }
-      .panel { border-radius: 12px; padding: 12px; }
-      input[type="range"] { width: 100%; }
-    }
+    body { font-family: "Book Antiqua", Palatino, serif; background:#fdf6e3; color:#2b1a08; }
+    header { background:#f9f2dd; border-bottom:2px solid #d6b87a; text-align:center; padding:20px; }
+    textarea { width:100%; min-height:180px; }
+    .valid { color:green; font-weight:700; }
+    .invalid { color:red; font-weight:700; }
+    .errlist { margin-left:20px; }
+    .tag { display:inline-block; padding:2px 6px; margin-left:4px; background:#eee; border-radius:4px; font-size:0.8em; }
   </style>
 </head>
 <body>
   <header>
-    <h1>⚡ 4HM Jank‑O‑Meter + Deck Validator — STAGING ⚠️</h1>
-    <div class="sub">Filter rarely‑played cards, score your deck’s jankiness, and validate 4HM legality (with special legendary limits).</div>
+    <h1>⚡ 4HM Jank-O-Meter + Deck Validator — STAGING ⚠️</h1>
   </header>
 
-  <div class="wrap">
-    <!-- FILTER + TABLE -->
-    <div class="panel">
-      <div class="controls">
-        <div class="row">
-          <div class="pill" title="Set the maximum total appearances to include">
-            <span>Threshold ≤ <span id="thresholdLabel" class="kpi">…</span></span>
-            <input id="threshold" type="range" min="0" max="100" value="5" step="1"/>
-            <input id="thresholdNumber" type="number" min="0" value="5" step="1" title="Type an exact threshold"/>
-          </div>
-          <div class="pill" id="quickPresets" title="Quick jank thresholds">
-            Quick:
-            <button class="btn btn-mini" data-th="1">≤1</button>
-            <button class="btn btn-mini" data-th="2">≤2</button>
-            <button class="btn btn-mini" data-th="4">≤4</button>
-            <button class="btn btn-mini" data-th="10">≤10</button>
-            <button class="btn btn-mini" data-th="20">≤20</button>
-          </div>
-          <div class="pill" title="Filter results by set">
-            <label for="setFilter" class="muted">Filter by Set:</label>
-            <select id="setFilter" style="background:#fff9e6; color:#2b1a08; border:1px solid #c8a96c; border-radius:8px; padding:6px 8px;">
-              <option value="">All Sets</option>
-            </select>
-          </div>
-          <div class="actions">
-            <button id="exportBtn" class="btn" title="Download the current jank list as CSV">Export CSV</button>
-            <button id="copyLinkBtn" class="btn" title="Copy a sharable link with your current settings">Copy Link</button>
-          </div>
-        </div>
-        <div class="muted" id="meta">Loading data…</div>
-        <div class="muted" id="topInfo" aria-live="polite"></div>
-        <div id="err"></div>
-      </div>
-    </div>
-
-    <div class="panel" style="margin-top:16px;">
-      <div class="table-wrap">
-        <table id="jankTable" class="display" style="width:100%">
-          <thead>
-            <tr>
-              <th>Set</th>
-              <th>Card</th>
-              <th>Main Deck</th>
-              <th>Sideboard</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <div id="about">
-        <p><b>About:</b> Slide to reveal rarely‑played cards. Paste a deck to score <i>and</i> validate — with live pool + B&R.</p>
-        <p id="lastUpdated">⏱️ <b>Last updated:</b> …</p>
-      </div>
-    </div>
-
-    <!-- SCORE + VALIDATOR -->
-    <div class="panel" id="scorePanel" style="margin-top:16px;">
-      <h2 style="margin:0 0 10px 0; color:#3a240a;">🧪 Jank Score & ✅ Deck Validator</h2>
-      <div class="grid">
-        <div>
-          <label for="deckInput" class="muted">Paste your Tolaria/ManaStack/Moxfield‑style list here (sideboard optional):</label>
-          <textarea id="deckInput" placeholder="e.g. \n\n3 Sword of the Ages\n1 Sylvan Library\n1 Vaevictis Asmadi\n...            \n\nSIDEBOARD:\n1 Bazaar of Baghdad\n3 Crumble\n..."></textarea>
-          <div class="small">or <input type="file" id="deckFile" accept=".txt,.dek,.dec"/> <button id="analyzeBtn" class="btn">Analyze &amp; Validate Deck</button>
-            <label style="margin-left:8px;"><input type="checkbox" id="includeSb"/> Include sideboard in score</label>
-          </div>
-        </div>
-        <div class="score-hero">
-          <div class="score-badge">
-            <div><b>Jank Score</b> <span id="scoreValue" class="kpi">—</span>/100</div>
-            <div class="meter" aria-hidden="true"><div id="scoreBar"></div></div>
-            <div id="scoreFlavor" class="small">Paste a deck to score it.</div>
-          </div>
-          <div class="score-badge" style="min-width:260px;">
-            <div><b>Badges</b></div>
-            <div id="badges" class="small">—</div>
-            <p class="small" style="margin:6px 0 0 0;">The score rewards decks that run oddball, rarely‑seen cards and penalizes heavy reliance on common staples. Extra credit is given when a high percentage of the deck is made up of these unusual picks. <i>In short: the rarer and denser the jank, the higher the score.</i></p>
-            <details class="formula-toggle small"><summary><span class="chev">▸</span> Show exact formula</summary>
-              <div><span class="mono">Score = clamp(Base + Bonus, 0..100). Base = 100 × ((Σ copies×weight)/6000). weight = 100 × (1 − log(Total+1)/log(Max+1)). Bonus = round(25 × (JankDensity/100)^1.1).</span></div>
-            </details>
-          </div>
-        </div>
-        <div class="score-badge" style="flex:1;">
-          <div><b>Top 10 Jankiest in Deck</b></div>
-          <ol id="topJank" class="list"></ol>
-        </div>
-        <div class="score-badge" style="flex:1;">
-          <div><b>Deck Validator Results</b></div>
-          <div id="valStatus" class="small">—</div>
-          <ul id="valErrors" class="errlist"></ul>
-          <div id="valCounts" class="small"></div>
-          <div class="note">Special limits: <b>6pluslegendary</b> — max <b>2</b> total and ≤2 unique; <b>5legendary</b> — max <b>1</b> total and ≤1 unique.</div>
-        </div>
-      </div>
-    </div>
+  <div>
+    <textarea id="deckInput" placeholder="Paste your deck list here..."></textarea>
+    <br>
+    <button id="analyzeValidateBtn">Analyze & Validate Deck</button>
+    <input type="checkbox" id="includeSb" checked> Include sideboard in score
+    <div id="score">Score: --</div>
+    <div id="valStatus">—</div>
+    <ul id="valErrors" class="errlist"></ul>
+    <div id="topJank"></div>
   </div>
 
   <script>
-    // === DATA SOURCES (staging) ===
-    const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv"; // full pool
-    const BR_URL       = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQP2NPEcvsNl4wkBSKApw-opRIZ-C3rwFj51wJbMh1wYm_ci8y7o46gyfSubTbsfApvpoJpS2ysRohD/pub?output=csv"; // B&R
+    const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv";
 
-    // === GLOBALS ===
-    let allRows = []; // usage rows for jank table
-    let dataTable = null; let MAX_TOTAL = 0;
-
-    // Deck validator data
-    let LEGAL_CARDS = new Set();
+    let LEGAL_CARDS = new Map();
     let BANNED = new Set();
     let RESTRICTED = new Set();
-    let EXTRA_TYPE_RESTRICTED = new Set(); // Enchantments + any Legendary
+    let LEG6PLUS = new Set();
     const BASIC_SET = new Set(["plains","island","swamp","mountain","forest"]);
 
-    // Special legendary buckets (from card pool columns)
-    let SIX_PLUS_LEGENDARY = new Set(); // combined max 2 copies and ≤2 unique
-    let FIVE_LEGENDARY = new Set();     // combined max 1 copy and ≤1 unique
+    let MAX_TOTAL = 0;
 
-    const params = new URLSearchParams(location.search);
+    function normName(n){ return n.toLowerCase().replace(/[^a-z0-9]/g,""); }
 
-    function sliderToThreshold(s){ const k = Math.log(MAX_TOTAL + 1) / 100; return Math.round(Math.exp(k * s) - 1); }
-    function thresholdToSlider(t){ const k = Math.log(MAX_TOTAL + 1) / 100; return Math.round(Math.log((t||0) + 1) / k); }
-
-    window.addEventListener('DOMContentLoaded', () => { boot(); });
-
-    function showErr(msg){ console.error(msg); const el = document.getElementById('err'); el.style.display = 'block'; el.textContent = typeof msg === 'string' ? msg : (msg && msg.message ? msg.message : JSON.stringify(msg)); }
-
-    // ---------- LOADERS ----------
     function parseCSV(url){
-      return new Promise((resolve, reject) => {
-        Papa.parse(url, { download:true, header:true, skipEmptyLines:'greedy', complete: res => resolve(res.data || []), error: reject });
+      return new Promise((resolve,reject)=>{
+        Papa.parse(url,{download:true,header:true,skipEmptyLines:true,complete:res=>resolve(res.data),error:reject});
       });
     }
 
     async function boot(){
-      try{
-        const [pool, br] = await Promise.all([
-          parseCSV(CARDPOOL_URL),
-          parseCSV(BR_URL)
-        ]);
-        ingestPool(pool);
-        ingestBR(br);
-        bindDeckScore();
-      }catch(e){ showErr(e); }
-    }
-
-    function normName(s){ return String(s || '').normalize('NFKD').replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'").replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"').replace(/[\u2013\u2014]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase(); }
-
-    function ingestPool(rows){
-      if (!rows || !rows.length) return;
-      const headers = Object.keys(rows[0] || {}).map(h => (h||'').toString());
-      const nameKey  = headers.find(h => /^name$/i.test(h)) || headers[0];
-      const setKey   = headers.find(h => /^set$/i.test(h));
-      const mainKey  = headers.find(h => /4hm\s*main(deck)?/i.test(h)) || headers.find(h => /main\s*deck/i.test(h));
-      const sideKey  = headers.find(h => /4hm\s*side(board)?/i.test(h)) || headers.find(h => /side\s*board/i.test(h));
-      const totalKey = headers.find(h => /4hm\s*total/i.test(h))        || headers.find(h => /^total$/i.test(h));
-      const typeKey  = headers.find(h => /type|typeline|card\s*type/i.test(h));
-
-      LEGAL_CARDS = new Set(rows.map(r => (r[nameKey]||'').toString().trim()).filter(Boolean).map(normName));
-
-      allRows = rows.filter(r => r && r[nameKey]).map(r => ({
-        set:   String(setKey ? r[setKey] : '').trim(),
-        card:  String(r[nameKey]).trim(),
-        main:  Number(r[mainKey])  || 0,
-        side:  Number(r[sideKey])  || 0,
-        total: Number(r[totalKey]) || 0,
-        type:  String(typeKey ? r[typeKey] : '').toLowerCase()
-      }));
-
-      // Special legendary buckets from flags in pool
-      const sixKey  = headers.find(h => /6\s*\+?\s*legendary|6pluslegendary/i.test(h));
-      const fiveKey = headers.find(h => /5\s*legendary|fivelegendary/i.test(h));
-      SIX_PLUS_LEGENDARY.clear(); FIVE_LEGENDARY.clear();
-      const truthy = v => { const s = String(v||'').trim().toLowerCase(); return s && s!=='0' && s!=='false' && s!=='no' && s!=='n'; };
-      for (const r of rows){
-        const nm = normName((r[nameKey]||'').toString().trim()); if (!nm) continue;
-        if (sixKey  && truthy(r[sixKey]))  SIX_PLUS_LEGENDARY.add(nm);
-        if (fiveKey && truthy(r[fiveKey])) FIVE_LEGENDARY.add(nm);
-      }
-
-      MAX_TOTAL = allRows.reduce((m, r) => Math.max(m, r.total), 0);
-      const qThreshold = params.get('max');
-      const qSet = params.get('set');
-      const initialAbs = Math.min(qThreshold ? Number(qThreshold) : 4, MAX_TOTAL);
-      initUI(initialAbs); populateSetFilter(allRows.map(r => r.set)); renderTable(initialAbs, qSet);
-      const uniques = new Set(allRows.map(r => `${r.set}||${r.card}`)).size;
-      document.getElementById('meta').textContent = `Loaded ${allRows.length.toLocaleString()} rows (${uniques.toLocaleString()} unique cards). Max Total = ${MAX_TOTAL.toLocaleString()}.`;
-      document.getElementById('lastUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`;
-
-      // Build extra restricted set from types (All Enchantments and any Legendary are restricted to 1)
-      EXTRA_TYPE_RESTRICTED = new Set();
-      for (const r of allRows){
-        const nm = normName(r.card);
-        const t = (r.type||'');
-        if (/legendary/.test(t) || /enchantment/.test(t)) EXTRA_TYPE_RESTRICTED.add(nm);
-      }
-    }
-
-    function ingestBR(rows){
-      if (!rows || !rows.length) return;
-      const headers = Object.keys(rows[0] || {});
-      const nameKey = headers.find(h => /^name$/i.test(h) || /card\s*name/i.test(h) || /^card$/i.test(h)) || headers[0];
-      const bannedKey = headers.find(h => /\bbanned\b/i.test(h));
-      const restrictedKey = headers.find(h => /\brestricted\b/i.test(h));
-      BANNED.clear(); RESTRICTED.clear();
-      const truthy = v => { const s = String(v||'').trim().toLowerCase(); return s && s!=='0' && s!=='false' && s!=='no' && s!=='n' && s!=='na'; };
-      for (const r of rows){
-        const nm = normName((r[nameKey]||'').toString().trim()); if (!nm) continue;
-        let isB = false, isR = false;
-        if (bannedKey != null) isB = truthy(r[bannedKey]) || /banned/i.test(String(r[bannedKey]||''));
-        if (restrictedKey != null) isR = truthy(r[restrictedKey]) || /restricted/i.test(String(r[restrictedKey]||''));
-        if (!bannedKey && /banned/i.test(Object.values(r).join(' '))) isB = true;
-        if (!restrictedKey && /restricted/i.test(Object.values(r).join(' '))) isR = true;
-        if (isB) BANNED.add(nm);
-        if (isR) RESTRICTED.add(nm);
-      }
-    }
-
-    // ---------- UI PLUMBING ----------
-    function clampNumber(v, min, max){ return Math.max(min, Math.min(max, v)); }
-
-    function initUI(initialAbs){
-      const slider = document.getElementById('threshold');
-      const box = document.getElementById('thresholdNumber');
-      const label = document.getElementById('thresholdLabel');
-      slider.min = "0"; slider.max = "100"; slider.value = String(thresholdToSlider(initialAbs));
-      box.min = "0"; box.max = String(MAX_TOTAL); box.value = String(initialAbs);
-      label.textContent = Number(initialAbs).toLocaleString();
-      const syncFromSlider = (sVal) => { const abs = sliderToThreshold(Number(sVal)); box.value = String(abs); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs, document.getElementById('setFilter').value || ""); };
-      const syncFromBox = (bVal) => { const abs = clampNumber(Number(bVal)||0, 0, MAX_TOTAL); slider.value = String(thresholdToSlider(abs)); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs, document.getElementById('setFilter').value || ""); };
-      slider.addEventListener('input', e => syncFromSlider(e.target.value)); box.addEventListener('input',   e => syncFromBox(e.target.value));
-      document.getElementById('setFilter').addEventListener('change', () => { const abs = Number(box.value); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs, document.getElementById('setFilter').value || ""); });
-      document.getElementById('exportBtn').addEventListener('click', exportCSV);
-      document.getElementById('copyLinkBtn').addEventListener('click', copySharableLink);
-      document.querySelectorAll('#quickPresets .btn-mini').forEach(b => { b.addEventListener('click', () => { const abs = Math.min(Number(b.dataset.th), MAX_TOTAL); box.value = String(abs); slider.value = String(thresholdToSlider(abs)); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs, document.getElementById('setFilter').value || ""); }); });
-    }
-
-    function populateSetFilter(sets){ const sel = document.getElementById('setFilter'); const uniq = Array.from(new Set(sets)).sort((a,b)=>a.localeCompare(b)); uniq.forEach(s => { const opt = document.createElement('option'); opt.value = s; opt.textContent = s; sel.appendChild(opt); }); const qSet = params.get('set'); if (qSet) sel.value = qSet; }
-
-    function renderTable(threshold, setFilter){
-      const rows = allRows.filter(r => r.total <= threshold && (!setFilter || r.set === setFilter));
-      const data = rows.map(r => [r.set, r.card, r.main, r.side, r.total]);
-      if (dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); return; }
-      if (!window.jQuery || !jQuery.fn || !jQuery.fn.DataTable){ showErr('DataTables failed to load. Check CDN.'); return; }
-      dataTable = jQuery('#jankTable').DataTable({ data, columns: [ { title: 'Set' }, { title: 'Card' }, { title: 'Main Deck' }, { title: 'Sideboard' }, { title: 'Total' } ], order: [[4, 'desc'], [0, 'asc'], [1, 'asc']], pageLength: 25, deferRender: true, dom: 'tip' });
-      const topInfo = document.getElementById('topInfo');
-      if (topInfo){
-        dataTable.on('draw', function(){
-          const info = dataTable.page.info();
-          topInfo.textContent = `Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`;
-        });
-        dataTable.draw();
-      }
-    }
-
-    function exportCSV(){ const v = Number(document.getElementById('thresholdNumber').value); const set = document.getElementById('setFilter').value || ''; const rows = allRows.filter(r => r.total <= v && (!set || r.set === set)); const header = ['Set','Card','Main Deck','Sideboard','Total']; const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total].join(','))); const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `4HM-jank-threshold-${v}${set?`-${set.replace(/\s+/g,'_')}`:''}.csv`; a.click(); }
-
-    function updateQuery(max, set){ const url = new URL(location.href); if (max != null) url.searchParams.set('max', String(max)); if (set) url.searchParams.set('set', set); else url.searchParams.delete('set'); history.replaceState(null, '', url); }
-
-    async function copySharableLink(){ try { await navigator.clipboard.writeText(location.href); alert('Sharable link copied to clipboard!'); } catch(e){ alert('Copy failed. You can manually copy the URL.'); } }
-
-    // ======================
-    //  JANK SCORE (Beta)
-    // ======================
-    function bindDeckScore(){
-      const ta = document.getElementById('deckInput');
-      const file = document.getElementById('deckFile');
-      const btn = document.getElementById('analyzeBtn');
-      const includeSb = document.getElementById('includeSb');
-
-      file.addEventListener('change', async () => { const f = file.files && file.files[0]; if (!f) return; const text = await f.text(); ta.value = text; });
-
-      btn.addEventListener('click', () => {
-        const text = (ta.value || '').trim(); if (!text){ alert('Paste a decklist first.'); return; }
-        const parsed = parseDeck(text);
-        const report = scoreDeck(parsed, includeSb.checked); renderDeckScore(report);
-        const res = validateDeck(parsed); renderValidation(res);
+      const pool = await parseCSV(CARDPOOL_URL);
+      ingestPool(pool);
+      document.getElementById('analyzeValidateBtn').addEventListener('click', ()=>{
+        const deckText = document.getElementById('deckInput').value;
+        const parsed = parseDeck(deckText);
+        const val = validateDeck(parsed);
+        renderValidation(val);
+        const score = calcJankScore(parsed);
+        renderScore(score);
+        renderTopJank(parsed);
       });
     }
 
-    function buildNameMap(){ const map = new Map(); for (const r of allRows){ const key = normName(r.card); if (!map.has(key)) map.set(key, r.card); } return map; }
-    const NAME_MAP = () => buildNameMap();
+    function ingestPool(rows){
+      for(const r of rows){
+        const nm = normName(r.name||"");
+        if(!nm) continue;
+        LEGAL_CARDS.set(nm, r);
+        if(String(r.banned).toLowerCase()==="true") BANNED.add(nm);
+        if(String(r.restricted).toLowerCase()==="true") RESTRICTED.add(nm);
+        if(String(r.leg6orMore).toLowerCase()==="true") LEG6PLUS.add(nm);
+        const t = Number(r["4hmTotal"]||r.total||0);
+        if(t>MAX_TOTAL) MAX_TOTAL = t;
+      }
+    }
 
     function parseDeck(text){
-      const lines = text.split(/\r?\n/);
-      const main = new Map(); const side = new Map();
-      let toSide = false;
-      for (let raw of lines){
-        const line = raw.trim(); if (!line) continue;
-        if (/^side\s*board\s*:?/i.test(line)) { toSide = true; continue; }
-        const m = line.match(/^(\d+)?\s*(.+)$/); if (!m) continue;
-        let n = m[1] ? parseInt(m[1],10) : 1; let name = m[2];
-        name = name.replace(/\[[^\]]+\]/g,'').replace(/\([^\)]*\)$/,'').trim();
-        const bucket = toSide ? side : main; bucket.set(name, (bucket.get(name)||0) + (isFinite(n)?n:1));
+      const lines=text.split(/\r?\n/);
+      const main=new Map(); const side=new Map();
+      let toSide=false;
+      for(const raw of lines){
+        const line=raw.trim(); if(!line) continue;
+        if(/^side/i.test(line)){ toSide=true; continue; }
+        const m=line.match(/^(\d+)?\s*(.+)$/);
+        if(!m) continue;
+        const count=parseInt(m[1]||"1");
+        const nm=normName(m[2]);
+        const bucket=toSide?side:main;
+        bucket.set(nm,(bucket.get(nm)||0)+count);
       }
-      return {main, side};
+      return {main,side};
     }
 
-    const THRESH_ULTRA = 1, THRESH_DEEP = 4, THRESH_MED = 10, THRESH_LIGHT = 20;
-    function tierOf(total){ if (total <= THRESH_ULTRA) return 'Ultra‑Jank'; if (total <= THRESH_DEEP) return 'Deep Jank'; if (total <= THRESH_MED) return 'Medium Jank'; if (total <= THRESH_LIGHT) return 'Light Jank'; return ''; }
-
-    function scoreDeck(parsed, includeSide){
-      const nameMap = NAME_MAP(); const toRow = new Map(); for (const r of allRows){ toRow.set(r.card, r); }
-      function mapToArr(m){ return Array.from(m.entries()).map(([name,count])=>({name, count})); }
-      const mainArr = mapToArr(parsed.main); const sideArr = mapToArr(parsed.side);
-
-      const matchedMain = []; const unmatched = [];
-      for (const item of mainArr){ const key = normName(item.name); const official = nameMap.get(key); if (!official){ unmatched.push(`Main: ${item.count} × ${item.name}`); continue; } const row = toRow.get(official); if (!row){ unmatched.push(`Main: ${item.count} × ${item.name}`); continue; } matchedMain.push({ official, total: row.total, count: item.count }); }
-      const matchedSide = []; for (const item of sideArr){ const key = normName(item.name); const official = nameMap.get(key); if (!official){ unmatched.push(`Side: ${item.count} × ${item.name}`); continue; } const row = toRow.get(official); if (!row){ unmatched.push(`Side: ${item.count} × ${item.name}`); continue; } matchedSide.push({ official, total: row.total, count: item.count }); }
-
-      const logMax = Math.log(MAX_TOTAL + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
-      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; raw += m.count * weight(m.total); }
-      let copiesSide = 0, rawSide = 0; if (includeSide){ for (const s of matchedSide){ copiesSide += s.count; rawSide += s.count * weight(s.total); } }
-
-      const distinctUltra = new Set(matchedMain.filter(x => x.total <= THRESH_ULTRA).map(x => x.official)).size;
-      const distinctDeep  = new Set(matchedMain.filter(x => x.total <= THRESH_DEEP ).map(x => x.official)).size;
-      const distinctMed   = new Set(matchedMain.filter(x => x.total <= THRESH_MED  ).map(x => x.official)).size;
-      const distinctLight = new Set(matchedMain.filter(x => x.total <= THRESH_LIGHT).map(x => x.official)).size;
-
-      const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
-      const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
-      const rawMax = 60 * 100; const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
-      const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1)); const finalScore = Math.max(0, Math.min(100, baseScore + bonus));
-
-      const allForTop = [...matchedMain].map(x => ({name:x.official, w: weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top5 = allForTop.slice(0,10);
-
-      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, raw: Math.round(raw), copiesMain, copiesSide, distinctUltra, distinctDeep, distinctMed, distinctLight, deepDensity, top5, unmatched };
-    }
-
-    function renderDeckScore(r){
-      const scoreEl = document.getElementById('scoreValue'); const bar = document.getElementById('scoreBar'); const flavor = document.getElementById('scoreFlavor'); const badges = document.getElementById('badges'); const top = document.getElementById('topJank');
-      scoreEl.textContent = r.score; bar.style.width = r.score + '%';
-      let msg = ''; if (r.score >= 90) msg = '🌋 The Jank is STRONG with this one.'; else if (r.score >= 70) msg = '🧪 Maximum spice achieved — expect the unexpected.'; else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.'; else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.'; else msg = '🛡️ More staple than spice. Dare to jank harder?'; if (r.bonus >= 15) msg += ' 🧪 Dense spice pocket detected.'; flavor.textContent = msg;
-      badges.innerHTML = `
-        <div class="small">🧿 <b>Ultra‑jank</b> (≤${THRESH_ULTRA} Total): <b>${r.distinctUltra}</b></div>
-        <div class="small">💀 <b>Deep‑jank</b> (≤${THRESH_DEEP} Total): <b>${r.distinctDeep}</b></div>
-        <div class="small">🧪 <b>Medium‑jank</b> (≤${THRESH_MED} Total): <b>${r.distinctMed}</b></div>
-        <div class="small">🔥 <b>Light‑jank</b> (≤${THRESH_LIGHT} Total): <b>${r.distinctLight}</b></div>
-        <div class="small">📈 Jank Density: <b>${r.deepDensity}%</b> of maindeck</div>
-        <div class="small">➕ Density bonus added: <b>+${r.bonus}</b> (max +25)</div>
-        <div class="small">🧮 Base score (pre‑bonus): <b>${r.baseScore}</b></div>`;
-      top.innerHTML = '';
-      for (const t of r.top5){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `${t.name} ${badge?`<span class=\"tag\">${badge}</span>`:''}`; top.appendChild(li); }
-    }
-
-    // ======================
-    //  DECK VALIDATOR (4HM + legendary buckets + type-based + CSV-restricted)
-    // ======================
     function validateDeck(parsed){
-      const totals = new Map(); let mainCount = 0, sideCount = 0;
-      for (const [n,c] of parsed.main.entries()){ mainCount += c; totals.set(normName(n), (totals.get(normName(n))||0) + c); }
-      for (const [n,c] of parsed.side.entries()){ sideCount += c; totals.set(normName(n), (totals.get(normName(n))||0) + c); }
+      const totals=new Map();
+      let mainCount=0, sideCount=0;
+      for(const [n,c] of parsed.main){ totals.set(n,(totals.get(n)||0)+c); mainCount+=c; }
+      for(const [n,c] of parsed.side){ totals.set(n,(totals.get(n)||0)+c); sideCount+=c; }
+      const errors=[];
+      if(mainCount<60) errors.push(`Main deck has ${mainCount} cards (<60).`);
+      if(sideCount>15) errors.push(`Sideboard has ${sideCount} cards (>15).`);
 
-      const errors = [];
-      if (mainCount < 60) errors.push(`Main deck has ${mainCount} cards (minimum is 60).`);
-      if (sideCount > 15) errors.push(`Sideboard has ${sideCount} cards (maximum is 15).`);
-
-      let sixPlusTotal = 0, fiveTotal = 0; const sixPlusDistinct = new Set(); const fiveDistinct = new Set();
-
-      for (const [key,count] of totals.entries()){
-        if (BASIC_SET.has(key)) continue; // Basics are unlimited
-        if (!LEGAL_CARDS.has(key)) { errors.push(`Not in 4HM card pool: “${key}”`); continue; }
-        if (BANNED.has(key)) { errors.push(`BANNED card: “${key}”`); continue; }
-        if ((RESTRICTED.has(key) || EXTRA_TYPE_RESTRICTED.has(key)) && count > 1) { errors.push(`Restricted (max 1): “${key}” has ${count}.`); }
-        if (!RESTRICTED.has(key) && !EXTRA_TYPE_RESTRICTED.has(key) && count > 4) { errors.push(`Too many copies (max 4): “${key}” has ${count}.`); }
-
-        if (SIX_PLUS_LEGENDARY.has(key)) { sixPlusTotal += count; sixPlusDistinct.add(key); }
-        if (FIVE_LEGENDARY.has(key)) { fiveTotal += count; fiveDistinct.add(key); }
+      let leg6Unique=new Set();
+      for(const [nm,count] of totals){
+        if(BASIC_SET.has(nm)) continue;
+        if(!LEGAL_CARDS.has(nm)) { errors.push(`Not in card pool: ${nm}`); continue; }
+        if(BANNED.has(nm)) errors.push(`BANNED: ${LEGAL_CARDS.get(nm).name}`);
+        if(RESTRICTED.has(nm) && count>1) errors.push(`Restricted (max1): ${LEGAL_CARDS.get(nm).name} has ${count}`);
+        if(!RESTRICTED.has(nm) && count>4) errors.push(`Too many copies (>4): ${LEGAL_CARDS.get(nm).name} has ${count}`);
+        if(LEG6PLUS.has(nm) && count>0) leg6Unique.add(nm);
       }
+      if(leg6Unique.size>2) errors.push(`6+ mana Legendary group exceeded: ${leg6Unique.size} unique (max2).`);
 
-      if (sixPlusTotal > 2) errors.push(`6pluslegendary group limit exceeded: ${sixPlusTotal} total (max 2 across all cards in this group).`);
-      if (fiveTotal > 1) errors.push(`5legendary group limit exceeded: ${fiveTotal} total (max 1 across all cards in this group).`);
-      if (sixPlusDistinct.size > 2) errors.push(`6pluslegendary unique limit exceeded: ${sixPlusDistinct.size} distinct cards (max 2 unique).`);
-      if (fiveDistinct.size > 1) errors.push(`5legendary unique limit exceeded: ${fiveDistinct.size} distinct cards (max 1 unique).`);
+      return {ok:errors.length===0, errors};
+    }
 
-      return { ok: errors.length === 0, errors, mainCount, sideCount, totals, sixPlusTotal, fiveTotal, sixPlusDistinct: sixPlusDistinct.size, fiveDistinct: fiveDistinct.size };
+    function calcJankScore(parsed){
+      const includeSb=document.getElementById('includeSb').checked;
+      let totals=new Map();
+      for(const [n,c] of parsed.main) totals.set(n,(totals.get(n)||0)+c);
+      if(includeSb) for(const [n,c] of parsed.side) totals.set(n,(totals.get(n)||0)+c);
+      let sum=0, count=0;
+      for(const [nm,c] of totals){
+        const row=LEGAL_CARDS.get(nm); if(!row) continue;
+        const t=Number(row["4hmTotal"]||row.total||0);
+        const weight=100*(1 - Math.log((t||0)+1)/Math.log(MAX_TOTAL+1));
+        sum+=weight; count++;
+      }
+      return count?Math.round(sum/count):0;
+    }
+
+    function renderScore(score){
+      document.getElementById('score').innerHTML=`Jank Score: ${score} / 100`;
     }
 
     function renderValidation(res){
-      const status = document.getElementById('valStatus');
-      const list = document.getElementById('valErrors');
-      const counts = document.getElementById('valCounts');
-      list.innerHTML = '';
-      if (res.ok){ status.innerHTML = `<span class="valid">✅ Deck is legal for 4HM under current B&R.</span>`; }
-      else { status.innerHTML = `<span class="invalid">⛔ Deck is NOT legal — see issues below.</span>`; }
-      for (const e of res.errors){ const li = document.createElement('li'); li.textContent = e; list.appendChild(li); }
-      counts.innerHTML = `<span class="tag">Main: ${res.mainCount}</span><span class="tag">Side: ${res.sideCount}</span><span class="tag">Distinct: ${res.totals.size}</span>` +
-                         (res.sixPlusTotal!=null?` <span class=\"tag\">6pluslegendary total: ${res.sixPlusTotal}/2</span>`:'') +
-                         (res.fiveTotal!=null?` <span class=\"tag\">5legendary total: ${res.fiveTotal}/1</span>`:'') +
-                         (res.sixPlusDistinct!=null?` <span class=\"tag\">6pluslegendary unique: ${res.sixPlusDistinct}/2</span>`:'') +
-                         (res.fiveDistinct!=null?` <span class=\"tag\">5legendary unique: ${res.fiveDistinct}/1</span>`:'');
+      const status=document.getElementById('valStatus');
+      const list=document.getElementById('valErrors');
+      list.innerHTML="";
+      if(res.ok) status.innerHTML='<span class="valid">✅ Deck is legal.</span>';
+      else status.innerHTML='<span class="invalid">⛔ Deck is NOT legal</span>';
+      for(const e of res.errors){
+        const li=document.createElement('li'); li.textContent=e; list.appendChild(li);
+      }
     }
+
+    function renderTopJank(parsed){
+      const includeSb=document.getElementById('includeSb').checked;
+      let totals=new Map();
+      for(const [n,c] of parsed.main) totals.set(n,(totals.get(n)||0)+c);
+      if(includeSb) for(const [n,c] of parsed.side) totals.set(n,(totals.get(n)||0)+c);
+      const arr=[];
+      for(const [nm,c] of totals){
+        const row=LEGAL_CARDS.get(nm); if(!row) continue;
+        const t=Number(row["4hmTotal"]||row.total||0);
+        const weight=100*(1 - Math.log((t||0)+1)/Math.log(MAX_TOTAL+1));
+        arr.push({name:row.name,total:t,w:weight});
+      }
+      arr.sort((a,b)=>b.w-a.w);
+      const top=arr.slice(0,10);
+      const div=document.getElementById('topJank');
+      div.innerHTML='<b>Top 10 Jankiest in Deck</b><ul>'+top.map(t=>`<li>${t.name} <span class="tag">${t.w.toFixed(1)}</span></li>`).join('')+'</ul>';
+    }
+
+    window.addEventListener('DOMContentLoaded', boot);
   </script>
 </body>
 </html>
