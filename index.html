@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>4HM Jank‑O‑Meter + Deck Validator (Staging v‑next)</title>
-  <meta name="robots" content="noindex,nofollow"/>
+  <title>⚡ 4HM Jank‑O‑Meter ⚡</title>
+  <meta name="robots" content="index,follow">
+  <meta name="copyright" content="© TCGames, LLC (Travis Smith) 2025">
+
 
   <!-- libs -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
@@ -125,6 +127,30 @@
     <div class="sub">Filter rarely‑played cards, score your deck’s Jank, and validate 4HM legality with the current rules.</div>
   </header>
 
+  <!-- NEW WELCOME & INSTRUCTIONS PANEL -->
+  <div class="wrap">
+    <div class="panel" style="background:#fff9e6; border:2px solid #c8a96c;">
+      <h2 style="margin:0 0 10px 0; color:#3a240a;">👋 Welcome to the Four Horsemen (4HM) Old School Magic Brewing App!</h2>
+      <p>Four Horsemen (4HM) is a unique Old School Magic format using only cards from <b>Arabian Nights, Antiquities, Legends, The Dark</b>, the five basic lands, and ABUR duals. It’s an unsolved format where forgotten cards and wild brews shine.</p>
+      
+      <h3 style="margin-top:12px;">🔎 Quick How‑To</h3>
+      <ul class="small">
+        <li><b>Filters:</b> Narrow cards by set, color, type, rarity, mana value, and/or jank threshold.</li>
+        <li><b>Search:</b> Find any card by name.</li>
+        <li><b>Deck Validator:</b> Paste your decklist (Tolaria/ManaStack/Moxfield style) to check current tournament legality and get a Jank Score.</li>
+        <li><b>Card Details:</b> Click a card name in the table to view card info including oracle text.</li>
+        <li><b>Export:</b> Save your filtered view as a CSV or share your settings with a link.</li>
+      </ul>
+
+      <h3 style="margin-top:12px;">📚 Learn More & Community</h3>
+      <p class="small">
+        • <a href="https://www.fourhorsemenmagic.com/current-tournament" target="_blank">Current 4HM Tournament</a><br/>
+        • <a href="https://www.fourhorsemenmagic.com/" target="_blank">Official 4HM Rules</a><br/>
+        • Community: <a href="https://discord.gg/wyXFHtgsar" target="_blank">Discord</a> • <a href="https://facebook.com/groups/fourhorsemenmtg" target="_blank">Facebook</a> • <a href="https://youtube.com/@4HMOSMTG" target="_blank">YouTube</a>
+      </p>
+    </div>
+  </div>  
+  
   <div class="wrap">
     <div class="panel">
       <div class="controls">
@@ -272,7 +298,7 @@ SIDEBOARD:
     <div class="panel">
       <h3 style="margin:0 0 8px 0;">About Jank‑O‑Meter</h3>
       <p class="small" style="margin:6px 0;">This tool defines <b>Jank</b> as any legal 4HM card that has appeared in tournament decks fewer times than the chosen threshold. Adjust the slider to reveal the deepest jank of the format.</p>
-      <p class="small" style="margin:6px 0;">📊 <b>Data Source:</b> 4HM Tournament Card Usage (Google Sheets → live CSV). Thanks to Jim for the curation.</p>
+      <p class="small" style="margin:6px 0;">📊 <b>Data Source:</b> 4HM Tournament Card Usage (Google Sheets → live CSV). Thanks to <a href="http://schmakt.com/4HM/Default.aspx" target="_blank">Jim</a> for the curation.</p>
       <p class="small" id="aboutUpdated" style="margin:6px 0;">⏱️ <b>Last updated:</b> …</p>
     </div>
   </div>
@@ -739,5 +765,8 @@ SIDEBOARD:
     document.getElementById('modalClose').addEventListener('click', ()=> document.getElementById('cardModal').classList.remove('open'));
     document.getElementById('cardModal').addEventListener('click', (e)=>{ if(e.target.id==='cardModal') e.currentTarget.classList.remove('open'); });
   </script>
+<footer style="text-align:center; padding:10px; font-size:13px; color:#5a3816;">
+  © TCGames, LLC (Travis Smith) 2025
+</footer>
 </body>
 </html>
