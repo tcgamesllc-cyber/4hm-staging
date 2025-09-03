@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>4HM Jank‑O‑Meter + Deck Validator (Staging v‑next)</title>
   <meta name="robots" content="noindex,nofollow"/>
 
@@ -13,85 +13,129 @@
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
   <style>
-    :root { --bg:#fdf6e3; --card:#f9f2dd; --ink:#2b1a08; --muted:#7c6a4c; --accent:#8b4513; --bad:#8b1a1a; --link:#174ea6; }
+    :root { --bg:#fdf6e3; --card:#f9f2dd; --ink:#2b1a08; --muted:#7c6a4c; --accent:#8b4513; --ok:#1f7a1f; --bad:#8b1a1a; --tag:#5a3816; --link:#174ea6; }
     html, body { margin:0; padding:0; min-height:100%; box-sizing:border-box; background: var(--bg); color:var(--ink); font:16px/1.5 "Book Antiqua", Palatino, serif; }
 
-    body { background-image: radial-gradient(1200px 700px at 20% 10%, #fff9e6, rgba(0,0,0,0) 70%), radial-gradient(1000px 600px at 80% 20%, #f8edd4, rgba(0,0,0,0) 70%), radial-gradient(1400px 800px at 50% 90%, #f3e4c1, rgba(0,0,0,0) 70%), linear-gradient(#fdf6e3, #fdf6e3); border:24px solid transparent; border-image-source:url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3e%3crect width='80' height='80' fill='%23d6b87a'/%3e%3cg opacity='0.25'%3e%3cpath d='M0 0h80v80H0z' fill='none' stroke='%23b89654' stroke-width='2'/%3e%3c/g%3e%3c/svg%3e"); border-image-slice:100; border-image-repeat:round; }
+    body { background-image: radial-gradient(1200px 700px at 20% 10%, #fff9e6, rgba(0,0,0,0) 70%), radial-gradient(1000px 600px at 80% 20%, #f8edd4, rgba(0,0,0,0) 70%), radial-gradient(1400px 800px at 50% 90%, #f3e4c1, rgba(0,0,0,0) 70%), linear-gradient(#fdf6e3, #fdf6e3); border:24px solid transparent; border-image-source: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3e%3crect width='80' height='80' fill='%23d6b87a'/%3e%3cg opacity='0.25'%3e%3ccircle cx='10' cy='10' r='2' fill='%238d6e3f'/%3e%3ccircle cx='40' cy='20' r='1.6' fill='%238d6e3f'/%3e%3ccircle cx='65' cy='12' r='1.8' fill='%238d6e3f'/%3e%3ccircle cx='20' cy='55' r='2' fill='%238d6e3f'/%3e%3ccircle cx='70' cy='60' r='1.4' fill='%238d6e3f'/%3e%3cpath d='M0 0h80v80H0z' fill='none' stroke='%23b89654' stroke-width='2'/%3e%3c/g%3e%3c/svg%3e"); border-image-slice: 100; border-image-repeat: round; }
 
-    header { background: radial-gradient(circle at top left, #fff9e6, #fdf6e3 60%, #f3e4c1); border-bottom:4px solid #d6b87a; border-top:4px solid #d6b87a; box-shadow:0 4px 12px rgba(0,0,0,0.35); padding:20px 12px; text-align:center; position:relative; z-index:1; }
-    header h1 { margin:0; font-size:30px; color:#3a240a; text-shadow:1px 1px 0 #fff; }
-    header .sub { margin-top:6px; font-size:14px; color:#5a3816; }
+    header { background: radial-gradient(circle at top left, #fff9e6, #fdf6e3 60%, #f3e4c1); border-bottom:4px solid #d6b87a; border-top:4px solid #d6b87a; box-shadow:0 4px 12px rgba(0,0,0,0.35); padding:24px 16px; text-align:center; position:relative; z-index:1; }
+    header h1 { margin:0; font-size:32px; color:#3a240a; text-shadow:1px 1px 0 #fff; }
+    header .sub { margin-top:6px; font-size:15px; color:#5a3816; }
 
-    .wrap { max-width:1100px; margin:16px auto 60px; padding:0 12px; position:relative; z-index:1; }
-    .panel { background:var(--card); border-radius:16px; padding:14px; box-shadow:0 6px 20px rgba(0,0,0,.25); margin-bottom:14px; }
+    .wrap { max-width:1100px; margin:20px auto 60px; padding:0 16px; position:relative; z-index:1; }
+    .panel { background:var(--card); border-radius:16px; padding:18px; box-shadow:0 6px 20px rgba(0,0,0,.25); margin-bottom:16px; }
 
-    /* FILTER AREA */
-    .controls { display:grid; gap:10px; grid-template-columns:1fr; align-items:center; }
-    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-    .pill { background:#f2e6c6; border:1px solid #c8a96c; color:var(--ink); padding:8px 10px; border-radius:12px; display:flex; align-items:center; gap:10px; flex:1 1 auto; min-width:0; white-space:normal; }
-    .pill label { display:inline-flex; align-items:center; gap:6px; margin-right:10px; }
+    .controls { display:grid; gap:12px; grid-template-columns: 1fr; align-items:center; }
+    .row { 
+  display:flex; 
+  gap:14px; 
+  align-items:center; 
+  flex-wrap:wrap; 
+  overflow-x:auto;                 /* allow horizontal scroll if needed */
+  -webkit-overflow-scrolling:touch; 
+}
+
+.pill { 
+  background:#f2e6c6; 
+  border:1px solid #c8a96c; 
+  color:var(--ink); 
+  padding:8px 12px; 
+  border-radius:999px; 
+  display:inline-flex; 
+  align-items:center; 
+  gap:10px; 
+  flex:0 0 auto;                   /* behave nicely in a scrolling row */
+}
     .muted { color:var(--muted); font-size:13px; }
     .kpi { font-weight:700; color:var(--accent); }
-    .actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .actions { margin-left:auto; display:flex; gap:10px; }
     .btn { background:#fdf6e3; border:1px solid #c8a96c; color:#3a240a; padding:8px 12px; border-radius:10px; cursor:pointer; font-family:"Book Antiqua", Palatino, serif; }
     .btn:hover { background:#f8edd4; }
     .btn-mini { padding: 4px 8px; font-size: 13px; border-radius: 8px; }
-    .btn-ghost { background:transparent; }
 
-    input[type="range"] { -webkit-appearance:none !important; appearance:none !important; width:100%; height:10px; border-radius:5px; background:linear-gradient(to right, #d6b87a, #b38b4d); outline:none; cursor:pointer; border:1px solid #8b5a2b; box-shadow:inset 0 0 4px rgba(0,0,0,.4); }
+    input[type="range"] { -webkit-appearance:none !important; appearance:none !important; width:260px; height:10px; border-radius:5px; background:linear-gradient(to right, #d6b87a, #b38b4d); outline:none; margin:0 8px; cursor:pointer; border:1px solid #8b5a2b; box-shadow:inset 0 0 4px rgba(0,0,0,.4); }
     input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none !important; appearance:none !important; width:20px; height:20px; border-radius:50%; background:radial-gradient(circle at 30% 30%, #d6b87a, #8b5a2b); border:2px solid #5c3b16; box-shadow:inset 0 0 6px #d6b87a, 0 0 2px #000; cursor:pointer; transition:transform .05s ease-in-out; }
+    input[type="range"]:active::-webkit-slider-thumb { transform:scale(1.05); }
 
-    #thresholdNumber { width:80px; background:#fff9e6; color:#2b1a08; border:2px solid #c8a96c; border-radius:8px; padding:6px 8px; font-family:'Book Antiqua', Palatino, serif; box-shadow:inset 0 0 5px #d6b87a; }
+    #thresholdNumber { width:90px; background:#fff9e6; color:#2b1a08; border:2px solid #c8a96c; border-radius:8px; padding:6px 8px; font-family:'Book Antiqua', Palatino, serif; box-shadow:inset 0 0 5px #d6b87a; }
 
-    .search-input { width:220px; background:#fff9e6; color:#2b1a08; border:1px solid #c8a96c; border-radius:8px; padding:6px 8px; }
-    .num-input { width:90px; background:#fff9e6; color:#2b1a08; border:1px solid #c8a96c; border-radius:8px; padding:6px 8px; }
-
-    /* Mobile filter drawer */
-    .drawer-toggle { display:none; justify-content:space-between; align-items:center; gap:8px; }
-    .drawer-toggle .count { font-size:12px; color:#5a3816; }
-
-    #moreFilters { display:block; }
-
-    /* TABLE */
-    .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-    table.dataTable { width:100%; background:#fdf6e3; border:2px solid #d6b87a; border-radius:12px; overflow:hidden; }
+    table.dataTable { background:#fdf6e3; border:2px solid #d6b87a; border-radius:12px; overflow:hidden; }
     table.dataTable thead th { background:#f2e6c6; color:#3a240a; font-weight:bold; border-bottom:2px solid #d6b87a; }
     table.dataTable tbody tr:nth-child(even) { background:#fbf2de; }
     table.dataTable tbody tr:nth-child(odd)  { background:#f6ebd2; }
     table.dataTable tbody td { color:#2b1a08; }
 
-    .tag { display:inline-block; padding:2px 6px; border-radius:999px; border:1px solid #c8a96c; background:#fff9e6; margin-left:6px; font-size:12px; color:#5a3816; }
+    .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    #jankTable { table-layout: fixed; width:100%; }
+    #jankTable th, #jankTable td { white-space: normal; word-break: break-word; }
+
+    #scorePanel .grid { display:grid; grid-template-columns: 1fr; gap:12px; }
+    #deckInput { width:100%; min-height:180px; box-sizing:border-box; background:#fff9e6; border:2px solid #c8a96c; border-radius:12px; padding:10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .score-hero { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+    .score-badge { background:#f2e6c6; border:1px solid #c8a96c; padding:10px 14px; border-radius:12px; }
+    .meter { height:12px; background:#eadfbe; border:1px solid #c8a96c; border-radius:999px; overflow:hidden; }
+    .meter > div { height:100%; background:linear-gradient(90deg,#6bcb6b,#ffd166,#ff9248,#ef476f); width:0%; }
+    .small { font-size:13px; color:#5a3816; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .list { margin:6px 0 0 16px; }
+    .tag { display:inline-block; padding:2px 6px; border-radius:999px; border:1px solid #c8a96c; background:#fff9e6; margin-left:6px; font-size:12px; color:var(--tag); }
     .tag.banned { border-color:#b66; background:#fde9e9; color:var(--bad); }
     .tag.restricted { border-color:#b88; background:#fbeff8; }
 
-    /* Modal */
     .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); padding: 16px; z-index: 1000; }
     .modal.open { display: flex; }
-    .modal-card { max-width:680px; width:100%; background:var(--card); border:2px solid #c8a96c; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.35); padding: 14px; }
-    .modal-head { display:flex; align-items:flex-start; gap:8px; }
-    .modal-title { font-weight:800; color:#3a240a; font-size:20px; }
-    .modal-close { margin-left:auto; cursor:pointer; border:1px solid #c8a96c; background:#fff9e6; border-radius:10px; padding:4px 8px; }
-    pre.cardtext { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background:#fff9e6; border: 1px solid #c8a96c; border-radius: 8px; padding:8px; }
+    .modal-card { max-width: 680px; width: 100%; background: var(--card); border: 2px solid #c8a96c; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.35); padding: 14px; }
+    .modal-head { display:flex; align-items:flex-start; gap: 8px; }
+    .modal-title { font-weight: 800; color:#3a240a; font-size:20px; }
+    .modal-close { margin-left:auto; cursor: pointer; border: 1px solid #c8a96c; background: #fff9e6; border-radius: 10px; padding: 4px 8px; }
+    pre.cardtext { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background: #fff9e6; border: 1px solid #c8a96c; border-radius: 8px; padding: 8px; }
+
+    /* Magic‑cardish layout for modal */
     .card-top { display:flex; align-items:flex-start; gap:12px; }
     .mc-right { margin-left:auto; text-align:right; }
     .type-line { margin:6px 0 8px 0; font-style:italic; }
     .card-footer { display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
     .artist { font-size:12px; color:#6b5a3a; }
     .pt { font-weight:700; border:1px solid #c8a96c; padding:2px 6px; border-radius:8px; background:#fff9e6; }
-    a.cardlink { color:var(--link); text-decoration:underline; cursor:pointer; }
 
-    /* RESPONSIVE */
-    @media (max-width: 900px){
-      .controls { gap:8px; }
-      .pill { font-size:15px; }
-      .search-input { width:100%; }
-      .drawer-toggle { display:flex; }
-      #moreFilters { display:none; }
-      #moreFilters.open { display:block; }
-      .pill { width:100%; }
-      .row { flex-direction:column; gap:8px; }
-      input[type="range"]{ width:100%; }
-    }
+    a.cardlink { color: var(--link); text-decoration: underline; cursor:pointer; }
+
+    .search-input { width:220px; background:#fff9e6; color:#2b1a08; border:1px solid #c8a96c; border-radius:8px; padding:6px 8px; }
+    .num-input { width:82px; background:#fff9e6; color:#2b1a08; border:1px solid #c8a96c; border-radius:8px; padding:6px 8px; }
+
+    @media (max-width: 640px) {
+  body { border-width: 16px; }
+  header h1 { font-size: 24px; }
+  header .sub { font-size: 13px; }
+
+  .wrap { padding: 0 8px; overflow-x:hidden; }
+  .panel { border-radius: 12px; padding: 12px; }
+
+  /* stack the filters, full width pills */
+  .row { 
+    flex-wrap: nowrap; 
+    flex-direction: column; 
+    gap:10px; 
+    overflow-x:visible; 
+  }
+  .pill { 
+    padding: 8px 10px; 
+    width:100%; 
+    border-radius:12px; 
+  }
+
+  input[type="range"] { width: 100%; }
+  #thresholdNumber { width: 72px; }
+
+  table.dataTable { border-width: 1px; }
+  table.dataTable thead th { font-size: 14px; }
+  table.dataTable tbody td { font-size: 14px; }
+
+  .modal-card { max-height: 80vh; overflow:auto; }
+  .search-input { width: 100%; }
+  .actions { width:100%; justify-content:flex-start; }
+}
+
   </style>
 </head>
 <body>
@@ -102,14 +146,7 @@
 
   <div class="wrap">
     <div class="panel">
-      <!-- Mobile filter drawer button -->
-      <div class="drawer-toggle">
-        <button id="toggleFilters" class="btn btn-ghost">☰ Filters</button>
-        <div class="count" id="activeFilters">0 active</div>
-      </div>
-
       <div class="controls">
-        <!-- Always-visible basic row -->
         <div class="row">
           <div class="pill" title="Set the maximum total appearances to include">
             <span>Threshold ≤ <span id="thresholdLabel" class="kpi">…</span></span>
@@ -135,58 +172,51 @@
             <input id="nameSearch" class="search-input" type="text" placeholder="Card name…"/>
           </div>
         </div>
-
-        <!-- Drawer content: advanced filters -->
-        <div id="moreFilters">
-          <div class="row">
-            <div class="pill" title="Filter by color in casting cost (select any combination)">
-              <span class="muted">Colors:</span>
-              <label><input type="checkbox" class="cf" data-c="W"> W</label>
-              <label><input type="checkbox" class="cf" data-c="U"> U</label>
-              <label><input type="checkbox" class="cf" data-c="B"> B</label>
-              <label><input type="checkbox" class="cf" data-c="R"> R</label>
-              <label><input type="checkbox" class="cf" data-c="G"> G</label>
-              <label><input type="checkbox" class="cf" data-c="C"> C</label>
-              <span class="muted" style="margin-left:8px">•</span>
-              <label title="Require cards to contain ALL selected colors (instead of ANY)."><input type="checkbox" id="colorModeAll"> Match ALL</label>
-            </div>
-            <div class="pill" title="Filter by card types (any combination)">
-              <span class="muted">Types:</span>
-              <label><input type="checkbox" class="tf" data-t="creature"> Creature</label>
-              <label><input type="checkbox" class="tf" data-t="artifact"> Artifact</label>
-              <label><input type="checkbox" class="tf" data-t="artifact creature"> Artifact Creature</label>
-              <label><input type="checkbox" class="tf" data-t="enchantment"> Enchantment</label>
-              <label><input type="checkbox" class="tf" data-t="instant"> Instant</label>
-              <label><input type="checkbox" class="tf" data-t="sorcery"> Sorcery</label>
-              <label><input type="checkbox" class="tf" data-t="land"> Land</label>
-            </div>
+        <div class="row">
+          <div class="pill" title="Filter by color in casting cost (select any combination)">
+            <span class="muted">Colors:</span>
+            <label><input type="checkbox" class="cf" data-c="W"> W</label>
+            <label><input type="checkbox" class="cf" data-c="U"> U</label>
+            <label><input type="checkbox" class="cf" data-c="B"> B</label>
+            <label><input type="checkbox" class="cf" data-c="R"> R</label>
+            <label><input type="checkbox" class="cf" data-c="G"> G</label>
+            <label><input type="checkbox" class="cf" data-c="C"> C</label>
+            <span class="muted" style="margin-left:8px">•</span>
+            <label title="Require cards to contain ALL selected colors (instead of ANY)."><input type="checkbox" id="colorModeAll"> Match ALL</label>
           </div>
-          <div class="row">
-            <div class="pill" title="Filter by supertypes (any combination)">
-              <span class="muted">Supertypes:</span>
-              <label><input type="checkbox" class="sf" data-s="legendary"> Legendary</label>
-              <label><input type="checkbox" class="sf" data-s="world"> World</label>
-              <label><input type="checkbox" class="sf" data-s="basic"> Basic</label>
-            </div>
-            <div class="pill" title="Filter by rarity">
-              <span class="muted">Rarity:</span>
-              <span id="rarityFilters"></span>
-            </div>
+          <div class="pill" title="Filter by card types (any combination)">
+            <span class="muted">Types:</span>
+            <label><input type="checkbox" class="tf" data-t="creature"> Creature</label>
+            <label><input type="checkbox" class="tf" data-t="artifact"> Artifact</label>
+            <label><input type="checkbox" class="tf" data-t="artifact creature"> Artifact Creature</label>
+            <label><input type="checkbox" class="tf" data-t="enchantment"> Enchantment</label>
+            <label><input type="checkbox" class="tf" data-t="instant"> Instant</label>
+            <label><input type="checkbox" class="tf" data-t="sorcery"> Sorcery</label>
+            <label><input type="checkbox" class="tf" data-t="land"> Land</label>
           </div>
-          <div class="row">
-            <div class="pill" title="Filter by mana value (converted mana cost)">
-              <span class="muted">Mana Value:</span>
-              <label>Min <input id="mvMin" class="num-input" type="number" min="0" step="1" placeholder="0"/></label>
-              <label>Max <input id="mvMax" class="num-input" type="number" min="0" step="1" placeholder=""/></label>
-            </div>
-            <div class="pill actions" title="Actions">
-              <button id="resetFilters" class="btn" title="Reset all filters to defaults">Reset</button>
-              <button id="exportBtn" class="btn" title="Download CSV view">Export CSV</button>
-              <button id="copyLinkBtn" class="btn" title="Copy a sharable link with your current settings">Copy Link</button>
-            </div>
+          <div class="pill" title="Filter by supertypes (any combination)">
+            <span class="muted">Supertypes:</span>
+            <label><input type="checkbox" class="sf" data-s="legendary"> Legendary</label>
+            <label><input type="checkbox" class="sf" data-s="world"> World</label>
+            <label><input type="checkbox" class="sf" data-s="basic"> Basic</label>
           </div>
         </div>
-
+        <div class="row">
+          <div class="pill" title="Filter by rarity">
+            <span class="muted">Rarity:</span>
+            <span id="rarityFilters"></span>
+          </div>
+          <div class="pill" title="Filter by mana value (converted mana cost)">
+            <span class="muted">Mana Value:</span>
+            <label>Min <input id="mvMin" class="num-input" type="number" min="0" step="1" placeholder="0"/></label>
+            <label>Max <input id="mvMax" class="num-input" type="number" min="0" step="1" placeholder=""/></label>
+          </div>
+          <div class="actions">
+            <button id="resetFilters" class="btn" title="Reset all filters to defaults">Reset</button>
+            <button id="exportBtn" class="btn" title="Download CSV view">Export CSV</button>
+            <button id="copyLinkBtn" class="btn" title="Copy a sharable link with your current settings">Copy Link</button>
+          </div>
+        </div>
         <div class="muted" id="meta">Loading data…</div>
         <div class="muted" id="topInfo" aria-live="polite"></div>
         <div id="err" style="display:none"></div>
@@ -197,7 +227,13 @@
       <div class="table-wrap">
         <table id="jankTable" class="display">
           <thead>
-            <tr><th>Set</th><th>Card</th><th>Main Deck</th><th>Sideboard</th><th>Total</th></tr>
+            <tr>
+              <th>Set</th>
+              <th>Card</th>
+              <th>Main Deck</th>
+              <th>Sideboard</th>
+              <th>Total</th>
+            </tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -207,30 +243,47 @@
 
     <div class="panel" id="scorePanel">
       <h2 style="margin:0 0 10px 0; color:#3a240a;">🧪 Jank Score & ✅ Deck Validator</h2>
-      <div class="grid" style="display:grid; grid-template-columns:1fr; gap:12px;">
+      <div class="grid">
         <div>
           <label for="deckInput" class="muted">Paste your Tolaria/ManaStack/Moxfield‑style list here (sideboard optional):</label>
-          <textarea id="deckInput" style="width:100%; min-height:180px; box-sizing:border-box; background:#fff9e6; border:2px solid #c8a96c; border-radius:12px; padding:10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;"></textarea>
-          <div class="muted" style="margin-top:6px; font-size:13px;">
+          <textarea id="deckInput" placeholder="e.g. \n\n3 Sword of the Ages\n1 Sylvan Library\n1 Vaevictis Asmadi\n...            \n\nSIDEBOARD:\n1 Bazaar of Baghdad\n3 Crumble\n..."></textarea>
+          <div class="small" style="margin-top:6px;">
             <input type="file" id="deckFile" accept=".txt,.dek,.dec"/>
             <button id="analyzeBtn" class="btn">Analyze &amp; Validate Deck</button>
             <label style="margin-left:8px;"><input type="checkbox" id="includeSb"/> Include sideboard in score</label>
           </div>
         </div>
-        <div class="row" style="align-items:stretch;">
-          <div class="pill" style="min-width:260px; flex:1 1 260px;">
+        <div class="score-hero">
+          <div class="score-badge">
             <div><b>Jank Score</b> <span id="scoreValue" class="kpi">—</span>/100</div>
-            <div style="height:12px; background:#eadfbe; border:1px solid #c8a96c; border-radius:999px; overflow:hidden; width:100%;"><div id="scoreBar" style="height:100%; background:linear-gradient(90deg,#6bcb6b,#ffd166,#ff9248,#ef476f); width:0%"></div></div>
-            <div id="scoreFlavor" class="muted">Paste a deck to score it.</div>
+            <div class="meter" aria-hidden="true"><div id="scoreBar"></div></div>
+            <div id="scoreFlavor" class="small">Paste a deck to score it.</div>
           </div>
-          <div class="pill" style="min-width:260px; flex:1 1 260px;">
+          <div class="score-badge" style="min-width:260px;">
             <div><b>Badges</b></div>
-            <div id="badges" class="muted">—</div>
+            <div id="badges" class="small">—</div>
+            <p class="small" style="margin:6px 0 0 0;">The score rewards decks that run oddball, rarely‑seen cards and penalizes heavy reliance on common staples. Extra credit is given when a high percentage of the deck is made up of these unusual picks. <i>In short: the rarer and denser the jank, the higher the score.</i></p>
           </div>
         </div>
-        <div class="pill"><div><b>Top 10 Jankiest in Deck</b><ol id="topJank" style="margin:6px 0 0 16px;"></ol></div></div>
-        <div class="pill"><div><b>Deck Validator Results</b><div id="valStatus" class="muted">—</div><ul id="valErrors"></ul><div id="valCounts" class="muted"></div><div class="muted">Special limits: <b>6+ CMC Legendary Creatures</b> — max <b>2 unique</b>. <b>5 CMC Legendary Creatures</b> — max <b>1 unique</b>. Legendary Creatures do <i>not</i> count toward the “4 rarely‑played” requirement.</div></div></div>
+        <div class="score-badge" style="flex:1;">
+          <div><b>Top 10 Jankiest in Deck</b></div>
+          <ol id="topJank" class="list"></ol>
+        </div>
+        <div class="score-badge" style="flex:1;">
+          <div><b>Deck Validator Results</b></div>
+          <div id="valStatus" class="small">—</div>
+          <ul id="valErrors" class="errlist"></ul>
+          <div id="valCounts" class="small"></div>
+          <div class="small">Special limits: <b>6+ CMC Legendary Creatures</b> — max <b>2 unique</b>. <b>5 CMC Legendary Creatures</b> — max <b>1 unique</b>. Legendary Creatures do <i>not</i> count toward the “4 rarely‑played” requirement.</div>
+        </div>
       </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin:0 0 8px 0;">About Jank‑O‑Meter</h3>
+      <p class="small" style="margin:6px 0;">This tool defines <b>Jank</b> as any legal 4HM card that has appeared in tournament decks fewer times than the chosen threshold. Adjust the slider to reveal the deepest jank of the format.</p>
+      <p class="small" style="margin:6px 0;">📊 <b>Data Source:</b> 4HM Tournament Card Usage (Google Sheets → live CSV). Thanks to Jim for the curation.</p>
+      <p class="small" id="aboutUpdated" style="margin:6px 0;">⏱️ <b>Last updated:</b> …</p>
     </div>
   </div>
 
@@ -242,7 +295,9 @@
             <div id="cardTitle" class="modal-title">Card</div>
             <div class="type-line" id="typeLine">—</div>
           </div>
-          <div class="mc-right"><div id="costSet">—</div></div>
+          <div class="mc-right">
+            <div id="costSet">—</div>
+          </div>
         </div>
         <button class="modal-close" id="modalClose">Close</button>
       </div>
@@ -251,7 +306,7 @@
         <div class="artist" id="artist">Artist — ?</div>
         <div class="pt" id="pt">—/—</div>
       </div>
-      <div class="muted" id="banInfo" style="margin-top:6px;"></div>
+      <div class="small" id="banInfo" style="margin-top:6px;"> </div>
     </div>
   </div>
 
@@ -259,111 +314,438 @@
     const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv";
     const BR_URL       = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQP2NPEcvsNl4wkBSKApw-opRIZ-C3rwFj51wJbMh1wYm_ci8y7o46gyfSubTbsfApvpoJpS2ysRohD/pub?output=csv";
 
-    let allRows = []; let dataTable = null; let MAX_TOTAL = 0;
-    let LEGAL_CARDS = new Map(); let NAME_MAP = new Map();
-    let BANNED = new Set(); let RESTRICTED = new Set();
+    let allRows = [];
+    let dataTable = null; let MAX_TOTAL = 0;
+
+    let LEGAL_CARDS = new Map();
+    let NAME_MAP = new Map();
+    let BANNED = new Set();
+    let RESTRICTED = new Set();
+    const BASIC_SET = new Set(["plains","island","swamp","mountain","forest"]);
     const HARD_BANNED = new Set(["bloodmoon","karakas","arenaoftheancients","bronzetablet","cityinabottle","golgothiansylex","jeweledbird","libraryofalexandria","moat","rebirth","shahrazad","tempestefreet"]);
+    let LEG6PLUS = new Set();
+    let LEG5 = new Set();
 
     const params = new URLSearchParams(location.search);
-    const colorState = new Set(); let colorModeAll = false; const typeState = new Set(); const superState = new Set(); const rarityState = new Set();
-    let mvMin = null, mvMax = null; let nameQuery = '';
+    const colorState = new Set();
+    let colorModeAll = false;
+    const typeState = new Set();
+    const superState = new Set();
+    const rarityState = new Set();
+    let mvMin = null, mvMax = null;
+    let nameQuery = '';
+
     const ALL_RARITIES = new Set();
 
-    function normName(s){ return String(s||'').normalize('NFKD').replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'").replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"').replace(/[\u2013\u2014]/g, '-').replace(/\[[^\]]*\]/g,'').replace(/\([^)]*\)$/,'').replace(/\s+/g,' ').trim().toLowerCase().replace(/[^a-z0-9]/g,''); }
-    function parseCSV(url){ return new Promise((resolve,reject)=>{ Papa.parse(url,{download:true,header:true,skipEmptyLines:'greedy',complete:r=>resolve(r.data||[]),error:reject}); }); }
-    function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i').test(t||''); }
-
-    window.addEventListener('DOMContentLoaded', () => { bindDeckTools(); boot(); bindDrawer(); });
-
-    async function boot(){ try{ const [pool, br] = await Promise.all([ parseCSV(CARDPOOL_URL), parseCSV(BR_URL) ]); ingestPool(pool); ingestBR(br); if(MAX_TOTAL<1) MAX_TOTAL=1; initUI(); stampDates(); } catch(e){ showErr('Data load issue — try refresh. '+(e?.message||e)); console.error(e);} }
-    function stampDates(){ const now = new Date().toLocaleString(); document.getElementById('lastUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${now}`; }
-    function showErr(msg){ const el=document.getElementById('err'); el.style.display='block'; el.textContent = typeof msg==='string'? msg : (msg?.message||JSON.stringify(msg)); }
-
-    function ingestPool(rows){ if(!rows?.length) return; const headers=Object.keys(rows[0]||{}); const nk=headers.find(h=>/^name$/i.test(h))||headers[0]; const sk=headers.find(h=>/^set$/i.test(h)); const mk=headers.find(h=>/4hm\s*main(deck)?/i.test(h))||'4hmMainDeck'; const sbk=headers.find(h=>/4hm\s*side(board)?/i.test(h))||'4hmSideBoard'; const tk=headers.find(h=>/4hm\s*total/i.test(h))||'4hmTotal'; const toNum=v=>{const n=Number(String(v||'').replace(/,/g,'')); return isFinite(n)?n:0;};
-      for(const r of rows){ const raw=r[nk]; if(!raw) continue; const key=normName(raw); const set=String(sk? r[sk] : '').trim(); const main=toNum(r[mk]); const side=toNum(r[sbk]); const tot=toNum(r[tk]); const text=String(r.text||r.oracleText||r.rules||r["rules text"]||'').trim(); const manaCost=String(r.manaCost||r["mana cost"]||r.cost||'').trim(); const mv=Number(r.manaValue||r.cmc||0); const typesStr=String(r.types||'').toLowerCase(); const supersStr=String(r.supertypes||'').toLowerCase(); const subtypesStr=String(r.subtypes||'').toLowerCase(); const typesSet=new Set(typesStr.split(/[\s,;]+/).filter(Boolean)); const supersSet=new Set(supersStr.split(/[\s,;]+/).filter(Boolean)); const rarity=String(r.rarity||'').toLowerCase().trim(); if(rarity) ALL_RARITIES.add(rarity); const artist=String(r.artist||'').trim(); const power=(r.power!=null? String(r.power).trim(): ''); const toughness=(r.toughness!=null? String(r.toughness).trim(): '');
-        NAME_MAP.set(key,String(raw)); LEGAL_CARDS.set(key,r);
-        if(String(r.banned).toLowerCase()==='true') BANNED.add(key); if(String(r.restricted).toLowerCase()==='true') RESTRICTED.add(key);
-        if(tot>MAX_TOTAL) MAX_TOTAL=tot;
-        allRows.push({ set, card:String(raw), main, side, total:tot, text, manaCost, mv, key, typesStr, supersStr, subtypesStr, typesSet, supersSet, rarity, artist, power, toughness }); }
+    function normName(s){
+      return String(s||'')
+        .normalize('NFKD')
+        .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")
+        .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"')
+        .replace(/[\u2013\u2014]/g, '-')
+        .replace(/\[[^\]]*\]/g,'')
+        .replace(/\([^)]*\)$/,'')
+        .replace(/\s+/g,' ')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g,'');
     }
-    function ingestBR(rows){ if(!rows?.length) return; const headers=Object.keys(rows[0]||{}); const nk=headers.find(h=>/^name$/i.test(h)||/card\s*name/i.test(h)||/^card$/i.test(h))||headers[0]; const bk=headers.find(h=>/^banned$/i.test(h)); const rk=headers.find(h=>/^restricted$/i.test(h)); const truthy=v=>{const s=String(v||'').trim().toLowerCase(); return s && s!=='0' && s!=='false' && s!=='no' && s!=='n' && s!=='na';}; for(const r of rows){ const key=normName(r[nk]); if(!key) continue; if(bk && truthy(r[bk])) BANNED.add(key); if(rk && truthy(r[rk])) RESTRICTED.add(key); } }
+
+    function parseCSV(url){
+      return new Promise((resolve, reject) => {
+        Papa.parse(url, { download:true, header:true, skipEmptyLines:'greedy', complete: res => resolve(res.data || []), error: reject });
+      });
+    }
+
+    function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i').test(t||''); }
+    function isLegendaryCard(row){ return String(row.supertypes||'').toLowerCase().includes('legendary'); }
+    function isLegendaryCreature(row){ return isLegendaryCard(row) && typeHas(String(row.types),'creature'); }
+
+    function parseColorsFromRow(r){
+      const out = new Set();
+      let cols = r.colors || r.colorIdentity || r.colours || '';
+      if (cols){ String(cols).split(/[\s,;]+/).forEach(tok=>{ const c = String(tok).trim().toUpperCase(); if(/^[WUBRG]$/.test(c)) out.add(c); }); }
+      if (!out.size && r.manaCost){ const m = String(r.manaCost); if (/{W}/i.test(m)) out.add('W'); if (/{U}/i.test(m)) out.add('U'); if (/{B}/i.test(m)) out.add('B'); if (/{R}/i.test(m)) out.add('R'); if (/{G}/i.test(m)) out.add('G'); }
+      return out;
+    }
+
+    function sliderToThreshold(s){ const k = Math.log(Math.max(1,MAX_TOTAL) + 1) / 100; return Math.round(Math.exp(k * s) - 1); }
+    function thresholdToSlider(t){ const k = Math.log(Math.max(1,MAX_TOTAL) + 1) / 100; return Math.round(Math.log((t||0) + 1) / (k||1)); }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      try { bindDeckTools(); } catch(e){ console.error(e); }
+      boot();
+    });
+
+    async function boot(){
+      try{
+        const [pool, br] = await Promise.all([ parseCSV(CARDPOOL_URL), parseCSV(BR_URL) ]);
+        ingestPool(pool);
+        ingestBR(br);
+        if(MAX_TOTAL<1) MAX_TOTAL = 1;
+        initUI();
+        document.getElementById('lastUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`;
+        document.getElementById('aboutUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`;
+      }catch(e){ showErr('Data load issue — try refresh. '+(e?.message||e)); console.error(e); }
+    }
+
+    function showErr(msg){ const el = document.getElementById('err'); el.style.display = 'block'; el.textContent = (msg && msg.message) ? msg.message : (typeof msg === 'string' ? msg : JSON.stringify(msg)); }
+
+    function ingestPool(rows){
+      if(!rows?.length) return;
+      const headers = Object.keys(rows[0]||{});
+      const nameKey  = headers.find(h => /^name$/i.test(h)) || headers[0];
+      const setKey   = headers.find(h => /^set$/i.test(h));
+      const mainKey  = headers.find(h => /4hm\s*main(deck)?/i.test(h)) || '4hmMainDeck';
+      const sideKey  = headers.find(h => /4hm\s*side(board)?/i.test(h)) || '4hmSideBoard';
+      const totalKey = headers.find(h => /4hm\s*total/i.test(h)) || '4hmTotal';
+      const toNum = v => { const n = Number(String(v||'').replace(/,/g,'')); return isFinite(n) ? n : 0; };
+
+      for(const r of rows){
+        const rawName = r[nameKey]; if(!rawName) continue; const key = normName(rawName);
+        const set = String(setKey ? r[setKey] : '').trim();
+        const main = toNum(r[mainKey]); const side = toNum(r[sideKey]); const tot = toNum(r[totalKey]);
+        const text = String(r.text||r.oracleText||r.rules||r["rules text"]||'').trim();
+        const manaCost = String(r.manaCost||r["mana cost"]||r.cost||'').trim();
+        const mv = Number(r.manaValue||r.cmc||0);
+        const colorSet = parseColorsFromRow({ colors:r.colors, colorIdentity:r.colorIdentity, manaCost });
+        const typesStr = String(r.types||'').toLowerCase();
+        const supersStr = String(r.supertypes||'').toLowerCase();
+        const subtypesStr = String(r.subtypes||'').toLowerCase();
+        const typesSet = new Set(typesStr.split(/[\s,;]+/).filter(Boolean));
+        const supersSet = new Set(supersStr.split(/[\s,;]+/).filter(Boolean));
+        const rarity = String(r.rarity||'').toLowerCase().trim();
+        if(rarity) ALL_RARITIES.add(rarity);
+        const artist = String(r.artist||'').trim();
+        const power = (r.power!=null? String(r.power).trim(): '');
+        const toughness = (r.toughness!=null? String(r.toughness).trim(): '');
+
+        NAME_MAP.set(key, String(rawName));
+        LEGAL_CARDS.set(key, r);
+        if(String(r.banned).toLowerCase()==='true') BANNED.add(key);
+        if(String(r.restricted).toLowerCase()==='true') RESTRICTED.add(key);
+        if(typesSet.has('enchantment') || supersSet.has('legendary')) RESTRICTED.add(key);
+        if(typesSet.has('creature') && supersSet.has('legendary') && mv>=6) LEG6PLUS.add(key);
+        if(typesSet.has('creature') && supersSet.has('legendary') && mv===5) LEG5.add(key);
+        if(tot>MAX_TOTAL) MAX_TOTAL = tot;
+
+        allRows.push({ set, card: String(rawName), main, side, total: tot, colors: colorSet, colorless: colorSet.size===0, text, manaCost, mv, key, typesStr, supersStr, subtypesStr, typesSet, supersSet, rarity, artist, power, toughness });
+      }
+    }
+
+    function ingestBR(rows){
+      if(!rows?.length) return;
+      const headers = Object.keys(rows[0]||{});
+      const nameKey = headers.find(h => /^name$/i.test(h) || /card\s*name/i.test(h) || /^card$/i.test(h)) || headers[0];
+      const bannedKey = headers.find(h => /^banned$/i.test(h));
+      const restrictedKey = headers.find(h => /^restricted$/i.test(h));
+      const truthy = v => { const s = String(v||'').trim().toLowerCase(); return s && s!=='0' && s!=='false' && s!=='no' && s!=='n' && s!=='na'; };
+      for(const r of rows){
+        const key = normName(r[nameKey]); if(!key) continue;
+        if(bannedKey && truthy(r[bannedKey])) BANNED.add(key);
+        if(restrictedKey && truthy(r[restrictedKey])) RESTRICTED.add(key);
+      }
+    }
 
     function initUI(){
-      const slider=document.getElementById('threshold'); const box=document.getElementById('thresholdNumber'); const label=document.getElementById('thresholdLabel'); const q=params.get('max'); const initialAbs=Math.min(q?Number(q):4, Math.max(1,MAX_TOTAL));
-      const toAbs=s=>{const k=Math.log(Math.max(1,MAX_TOTAL)+1)/100; return Math.round(Math.exp(k*s)-1);} ;
-      const toSlider=t=>{const k=Math.log(Math.max(1,MAX_TOTAL)+1)/100; return Math.round(Math.log((t||0)+1)/(k||1));};
-      slider.min='0'; slider.max='100'; slider.value=String(toSlider(initialAbs)); box.min='0'; box.max=String(Math.max(1,MAX_TOTAL)); box.value=String(initialAbs); label.textContent=Number(initialAbs).toLocaleString();
-      const syncFromSlider=sVal=>{const abs=toAbs(Number(sVal)); box.value=String(abs); label.textContent=abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value||""); updateQuery(abs); updateActiveFilters();};
-      const syncFromBox=bVal=>{const abs=Math.max(0, Math.min(Number(bVal)||0, Math.max(1,MAX_TOTAL))); slider.value=String(toSlider(abs)); label.textContent=abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value||""); updateQuery(abs); updateActiveFilters();};
-      slider.addEventListener('input', e=>syncFromSlider(e.target.value)); box.addEventListener('input', e=>syncFromBox(e.target.value));
-      document.querySelectorAll('#quickPresets .btn-mini').forEach(b=>b.addEventListener('click',()=>{const abs=Math.min(Number(b.dataset.th), Math.max(1,MAX_TOTAL)); box.value=String(abs); slider.value=String(toSlider(abs)); label.textContent=abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value||""); updateQuery(abs); updateActiveFilters(); }));
+      const slider = document.getElementById('threshold');
+      const box = document.getElementById('thresholdNumber');
+      const label = document.getElementById('thresholdLabel');
+      const qThreshold = params.get('max');
+      const initialAbs = Math.min(qThreshold ? Number(qThreshold) : 4, Math.max(1,MAX_TOTAL));
+      slider.min = '0'; slider.max = '100'; slider.value = String(thresholdToSlider(initialAbs));
+      box.min = '0'; box.max = String(Math.max(1,MAX_TOTAL)); box.value = String(initialAbs);
+      label.textContent = Number(initialAbs).toLocaleString();
 
-      populateSetFilter(allRows.map(r=>r.set)); populateRarityFilters();
+      const syncFromSlider = (sVal) => { const abs = sliderToThreshold(Number(sVal)); box.value = String(abs); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); };
+      const syncFromBox = (bVal) => { const abs = Math.max(0, Math.min(Number(bVal)||0, Math.max(1,MAX_TOTAL))); slider.value = String(thresholdToSlider(abs)); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); };
+      slider.addEventListener('input', e=>syncFromSlider(e.target.value));
+      box.addEventListener('input', e=>syncFromBox(e.target.value));
+      document.querySelectorAll('#quickPresets .btn-mini').forEach(b=> b.addEventListener('click',()=>{ const abs=Math.min(Number(b.dataset.th), Math.max(1,MAX_TOTAL)); box.value=String(abs); slider.value=String(thresholdToSlider(abs)); label.textContent=abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); }));
 
-      document.querySelectorAll('.cf').forEach(cb=>cb.addEventListener('change',()=>{ const c=cb.dataset.c; cb.checked? colorState.add(c): colorState.delete(c); redraw(); updateActiveFilters(); }));
-      document.getElementById('colorModeAll').addEventListener('change', e=>{ colorModeAll=!!e.target.checked; redraw(); });
-      document.querySelectorAll('.tf').forEach(cb=>cb.addEventListener('change',()=>{ const t=cb.dataset.t; cb.checked? typeState.add(t): typeState.delete(t); redraw(); updateActiveFilters(); }));
-      document.querySelectorAll('.sf').forEach(cb=>cb.addEventListener('change',()=>{ const s=cb.dataset.s; cb.checked? superState.add(s): superState.delete(s); redraw(); updateActiveFilters(); }));
+      populateSetFilter(allRows.map(r => r.set));
+      populateRarityFilters();
 
-      document.getElementById('nameSearch').addEventListener('input', e=>{ nameQuery=String(e.target.value||'').trim().toLowerCase(); redraw(); });
-      document.getElementById('mvMin').addEventListener('input', e=>{ const v=e.target.value; mvMin=v===''? null : Number(v); redraw(); updateActiveFilters(); });
-      document.getElementById('mvMax').addEventListener('input', e=>{ const v=e.target.value; mvMax=v===''? null : Number(v); redraw(); updateActiveFilters(); });
+      document.querySelectorAll('.cf').forEach(cb => { cb.addEventListener('change', () => { const c = cb.dataset.c; if (cb.checked) colorState.add(c); else colorState.delete(c); redraw(); }); });
+      const modeBox = document.getElementById('colorModeAll');
+      if (modeBox){ modeBox.addEventListener('change', (e)=>{ colorModeAll = !!e.target.checked; redraw(); }); }
 
-      document.getElementById('resetFilters').addEventListener('click', ()=>{ document.querySelectorAll('.cf,.tf,.sf,.rf').forEach(cb=>cb.checked=false); colorState.clear(); typeState.clear(); superState.clear(); rarityState.clear(); document.getElementById('nameSearch').value=''; nameQuery=''; document.getElementById('mvMin').value=''; document.getElementById('mvMax').value=''; mvMin=null; mvMax=null; document.getElementById('colorModeAll').checked=false; colorModeAll=false; document.getElementById('setFilter').value=''; const abs=Number(document.getElementById('thresholdNumber').value)||0; renderTable(abs,''); updateActiveFilters(); });
+      document.querySelectorAll('.tf').forEach(cb => { cb.addEventListener('change', () => { const t = cb.dataset.t; if (cb.checked) typeState.add(t); else typeState.delete(t); redraw(); }); });
+      document.querySelectorAll('.sf').forEach(cb => { cb.addEventListener('change', () => { const s = cb.dataset.s; if (cb.checked) superState.add(s); else superState.delete(s); redraw(); }); });
 
-      renderTable(initialAbs, params.get('set')); updateActiveFilters();
-      document.getElementById('exportBtn').addEventListener('click', exportCSV); document.getElementById('copyLinkBtn').addEventListener('click', copySharableLink);
+      document.getElementById('nameSearch').addEventListener('input', (e)=>{ nameQuery = String(e.target.value||'').trim().toLowerCase(); redraw(); });
+      document.getElementById('mvMin').addEventListener('input', e=>{ const v = e.target.value; mvMin = v===''? null : Number(v); redraw(); });
+      document.getElementById('mvMax').addEventListener('input', e=>{ const v = e.target.value; mvMax = v===''? null : Number(v); redraw(); });
+
+      document.getElementById('resetFilters').addEventListener('click', ()=>{
+        // Clear UI controls
+        document.querySelectorAll('.cf,.tf,.sf,.rf').forEach(cb=>{ cb.checked=false; });
+        colorState.clear(); typeState.clear(); superState.clear(); rarityState.clear();
+        document.getElementById('nameSearch').value = ''; nameQuery='';
+        document.getElementById('mvMin').value=''; document.getElementById('mvMax').value=''; mvMin=null; mvMax=null;
+        document.getElementById('colorModeAll').checked=false; colorModeAll=false;
+        document.getElementById('setFilter').value='';
+        const abs = Number(document.getElementById('thresholdNumber').value)||0;
+        renderTable(abs, '');
+      });
+
+      renderTable(initialAbs, params.get('set'));
+
+      document.getElementById('exportBtn').addEventListener('click', exportCSV);
+      document.getElementById('copyLinkBtn').addEventListener('click', copySharableLink);
     }
 
-    function bindDrawer(){ const btn=document.getElementById('toggleFilters'); const drawer=document.getElementById('moreFilters'); btn?.addEventListener('click', ()=>{ drawer.classList.toggle('open'); }); }
+    function redraw(){ const abs = Number(document.getElementById('thresholdNumber').value)||0; renderTable(abs, document.getElementById('setFilter').value || ''); }
 
-    function updateActiveFilters(){ const n = colorState.size + typeState.size + superState.size + rarityState.size + (mvMin!=null?1:0) + (mvMax!=null?1:0) + (document.getElementById('setFilter').value?1:0) + (document.getElementById('nameSearch').value?1:0); const el=document.getElementById('activeFilters'); if(el) el.textContent = `${n} active`; }
+    function populateSetFilter(sets){
+      const sel = document.getElementById('setFilter');
+      const uniq = Array.from(new Set(sets)).sort((a,b)=>a.localeCompare(b));
+      uniq.forEach(s => { const opt = document.createElement('option'); opt.value = s; opt.textContent = s; sel.appendChild(opt); });
+      const qSet = params.get('set'); if(qSet) sel.value = qSet;
+      sel.addEventListener('change', () => { redraw(); updateQuery(Number(document.getElementById('thresholdNumber').value)); });
+    }
 
-    function redraw(){ const abs=Number(document.getElementById('thresholdNumber').value)||0; renderTable(abs, document.getElementById('setFilter').value||''); }
+    function populateRarityFilters(){
+      const host = document.getElementById('rarityFilters');
+      const rars = Array.from(ALL_RARITIES).sort();
+      host.innerHTML = rars.map(r=>`<label><input type="checkbox" class="rf" data-r="${r}"> ${r.charAt(0).toUpperCase()+r.slice(1)}</label>`).join(' ');
+      host.querySelectorAll('.rf').forEach(cb=> cb.addEventListener('change', ()=>{ const r = cb.dataset.r; if(cb.checked) rarityState.add(r); else rarityState.delete(r); redraw(); }));
+    }
 
-    function populateSetFilter(sets){ const sel=document.getElementById('setFilter'); const uniq=Array.from(new Set(sets)).sort((a,b)=>a.localeCompare(b)); uniq.forEach(s=>{ const opt=document.createElement('option'); opt.value=s; opt.textContent=s; sel.appendChild(opt); }); const qSet=params.get('set'); if(qSet) sel.value=qSet; sel.addEventListener('change', ()=>{ redraw(); updateQuery(Number(document.getElementById('thresholdNumber').value)); updateActiveFilters(); }); }
+    function passesColorFilter(row){
+      if (!colorState.size) return true;
+      const wantsC = colorState.has('C');
+      const selectedColors = new Set([...colorState].filter(c => 'WUBRG'.includes(c)));
+      const hasColors = row.colors && row.colors.size>0;
+      if (wantsC && selectedColors.size === 0){ return !hasColors; }
+      if (colorModeAll){ let ok = true; for (const c of selectedColors){ if (!row.colors.has(c)) { ok = false; break; } } return ok; }
+      else { if (wantsC && !hasColors) return true; for (const c of selectedColors){ if (row.colors.has(c)) return true; } return false; }
+    }
 
-    function populateRarityFilters(){ const host=document.getElementById('rarityFilters'); const rars=Array.from(ALL_RARITIES).sort(); host.innerHTML = rars.map(r=>`<label><input type="checkbox" class="rf" data-r="${r}"> ${r.charAt(0).toUpperCase()+r.slice(1)}</label>`).join(' '); host.querySelectorAll('.rf').forEach(cb=> cb.addEventListener('change', ()=>{ const r=cb.dataset.r; cb.checked? rarityState.add(r): rarityState.delete(r); redraw(); updateActiveFilters(); })); }
-
-    function passesColorFilter(row){ if(!colorState.size) return true; const wantsC=colorState.has('C'); const sel=new Set([...colorState].filter(c=>'WUBRG'.includes(c))); const hasColors=row.colors && row.colors.size>0; if(wantsC && sel.size===0) return !hasColors; if(colorModeAll){ for(const c of sel){ if(!row.colors.has(c)) return false; } return true; } else { if(wantsC && !hasColors) return true; for(const c of sel){ if(row.colors.has(c)) return true; } return false; } }
-    function passesTypeFilter(row){ if(!typeState.size) return true; let pass=false; for(const t of typeState){ if(t==='artifact creature'){ if(row.typesSet && row.typesSet.has('artifact') && row.typesSet.has('creature')) { pass=true; break; } } else if(row.typesSet && row.typesSet.has(t)){ pass=true; break; } } return pass; }
-    function passesSuperFilter(row){ if(!superState.size) return true; for(const s of superState){ if(row.supersSet && row.supersSet.has(s)) return true; } return false; }
+    function passesTypeFilter(row){
+      if (!typeState.size) return true;
+      let pass = false;
+      for (const t of typeState){
+        if (t === 'artifact creature'){
+          if (row.typesSet && row.typesSet.has('artifact') && row.typesSet.has('creature')) { pass = true; break; }
+        } else if (row.typesSet && row.typesSet.has(t)) { pass = true; break; }
+      }
+      return pass;
+    }
+    function passesSuperFilter(row){ if (!superState.size) return true; for (const s of superState){ if (row.supersSet && row.supersSet.has(s)) return true; } return false; }
     function passesRarityFilter(row){ if(!rarityState.size) return true; return rarityState.has(row.rarity); }
     function passesManaFilter(row){ if(mvMin!=null && !(row.mv>=mvMin)) return false; if(mvMax!=null && !(row.mv<=mvMax)) return false; return true; }
     function passesNameSearch(row){ if(!nameQuery) return true; return row.card.toLowerCase().includes(nameQuery); }
 
-    function renderTable(threshold, setFilter){ const rows=allRows.filter(r=> r.total<=threshold && (!setFilter || r.set===setFilter) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r)); const data = rows.map(r=>{ const isBan=BANNED.has(r.key) || HARD_BANNED.has(r.key); const isRes=RESTRICTED.has(r.key); const tags = `${isBan?'<span class="tag banned">BANNED</span>':''}${(!isBan && isRes)?'<span class="tag restricted">Restricted</span>':''}`; const link=`<a href="#" class="cardlink" data-key="${r.key}">${r.card}</a>${tags}`; return [r.set, link, r.main, r.side, r.total]; }); if(dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); bindRowClicks(); } else { dataTable = jQuery('#jankTable').DataTable({ data, columns: [ { title: 'Set' }, { title: 'Card' }, { title: 'Main Deck' }, { title: 'Sideboard' }, { title: 'Total' } ], order: [[4, 'desc'], [0, 'asc'], [1, 'asc']], pageLength: 25, deferRender: true, dom: 'tip' }); const topInfo=document.getElementById('topInfo'); if(topInfo){ dataTable.on('draw', function(){ const info=dataTable.page.info(); topInfo.textContent = `Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`; }); dataTable.draw(); } bindRowClicks(); }
-      const meta=document.getElementById('meta'); if(meta) meta.textContent = `Loaded ${allRows.length.toLocaleString()} rows (${new Set(allRows.map(r=>r.card)).size.toLocaleString()} unique cards). Max Total = ${Math.max(1,MAX_TOTAL).toLocaleString()}.`;
+    function renderTable(threshold, setFilter){
+      const rows = allRows.filter(r => r.total <= threshold && (!setFilter || r.set === setFilter) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
+      const data = rows.map(r => {
+        const isBan = BANNED.has(r.key) || HARD_BANNED.has(r.key);
+        const isRes = RESTRICTED.has(r.key);
+        const tags = `${isBan?'<span class="tag banned">BANNED</span>':''}${(!isBan && isRes)?'<span class="tag restricted">Restricted</span>':''}`;
+        const link = `<a href="#" class="cardlink" data-key="${r.key}">${r.card}</a>${tags}`;
+        return [r.set, link, r.main, r.side, r.total];
+      });
+      if(dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); bindRowClicks(); }
+      else {
+        dataTable = jQuery('#jankTable').DataTable({ data, columns: [ { title: 'Set' }, { title: 'Card' }, { title: 'Main Deck' }, { title: 'Sideboard' }, { title: 'Total' } ], order: [[4, 'desc'], [0, 'asc'], [1, 'asc']], pageLength: 25, deferRender: true, dom: 'tip', createdRow: function(row, data){ /* keep */ } });
+        const topInfo = document.getElementById('topInfo');
+        if(topInfo){ dataTable.on('draw', function(){ const info = dataTable.page.info(); topInfo.textContent = `Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`; }); dataTable.draw(); }
+        const meta = document.getElementById('meta');
+        meta.textContent = `Loaded ${allRows.length.toLocaleString()} rows (${new Set(allRows.map(r => r.card)).size.toLocaleString()} unique cards). Max Total = ${Math.max(1,MAX_TOTAL).toLocaleString()}.`;
+        bindRowClicks();
+      }
     }
 
-    function bindRowClicks(){ jQuery('#jankTable tbody').off('click','a.cardlink'); jQuery('#jankTable tbody').on('click','a.cardlink', function(e){ e.preventDefault(); const key=this.getAttribute('data-key'); const row=allRows.find(x=>x.key===key) || null; if(!row) return; showCardModal(row); }); }
-
-    function exportCSV(){ const v=Number(document.getElementById('thresholdNumber').value); const set=document.getElementById('setFilter').value || ''; const rows=allRows.filter(r => r.total <= v && (!set || r.set===set) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r)); const header=['Set','Card','Main Deck','Sideboard','Total']; const lines=[header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total].join(','))); const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`4HM-jank-export.csv`; a.click(); }
-    function updateQuery(max){ const url=new URL(location.href); if(max!=null) url.searchParams.set('max', String(max)); history.replaceState(null,'',url); }
-    async function copySharableLink(){ try{ await navigator.clipboard.writeText(location.href); alert('Sharable link copied to clipboard!'); } catch(e){ alert('Copy failed. You can manually copy the URL.'); } }
-
-    function bindDeckTools(){ const ta=document.getElementById('deckInput'); const file=document.getElementById('deckFile'); const btn=document.getElementById('analyzeBtn'); const includeSb=document.getElementById('includeSb'); if(!btn) return; file?.addEventListener('change', async()=>{ try{ const f=file.files && file.files[0]; if(!f) return; const text=await f.text(); ta.value=text; }catch(e){ console.error(e); }}); btn.addEventListener('click', ()=>{ try{ const text=(ta.value||'').trim(); if(!text){ alert('Paste a decklist first.'); return; } const parsed=parseDeck(text); const report=scoreDeck(parsed, includeSb?.checked); renderDeckScore(report); const res=validateDeck(parsed); renderValidation(res); }catch(e){ console.error(e); showErr('Analyze failed: '+(e && e.message ? e.message : e)); alert('Analyze failed. See error box above.'); } }); }
-
-    function parseDeck(text){ const lines=text.split(/\r?\n/); const main=new Map(); const side=new Map(); let toSide=false; for(let raw of lines){ const line=raw.trim(); if(!line) continue; if(/^side\s*board\s*:?/i.test(line)){ toSide=true; continue; } const m=line.match(/^(\d+)?\s*(.+)$/); if(!m) continue; const n=m[1]? parseInt(m[1],10):1; let name=m[2]; name=name.replace(/\[[^\]]+\]/g,'').replace(/\([^\)]*\)$/,'').trim(); const key=normName(name); const bucket=toSide? side: main; bucket.set(key, (bucket.get(key)||0) + (isFinite(n)?n:1)); } return {main, side}; }
-
-    const THRESH_ULTRA=1, THRESH_DEEP=4, THRESH_MED=10, THRESH_LIGHT=20;
-    function tierOf(total){ if(total<=THRESH_ULTRA) return 'Ultra‑Jank'; if(total<=THRESH_DEEP) return 'Deep Jank'; if(total<=THRESH_MED) return 'Medium Jank'; if(total<=THRESH_LIGHT) return 'Light Jank'; return ''; }
-
-    function scoreDeck(parsed, includeSide){ const toRow=new Map(); const nameMap=new Map(); for(const r of allRows){ const k=normName(r.card); if(!nameMap.has(k)) nameMap.set(k,r.card); if(!toRow.has(k)) toRow.set(k,r); } function mapToArr(m){ return Array.from(m.entries()).map(([key,count])=>({key,count})); } const mainArr=mapToArr(parsed.main); const sideArr=mapToArr(parsed.side);
-      const matchedMain=[]; const matchedSide=[]; for(const item of mainArr){ const row=toRow.get(item.key); if(!row) continue; matchedMain.push({ key:item.key, official:nameMap.get(item.key)||item.key, total:row.total, count:item.count }); } for(const item of sideArr){ const row=toRow.get(item.key); if(!row) continue; matchedSide.push({ key:item.key, official:nameMap.get(item.key)||item.key, total:row.total, count:item.count }); }
-      const logMax=Math.log(Math.max(1,MAX_TOTAL)+1); const weight=t => 100 * (1 - (Math.log((t||0)+1) / logMax)); let copiesMain=0, raw=0; for(const m of matchedMain){ copiesMain+=m.count; raw += m.count * weight(m.total); } let rawSide=0; if(includeSide){ for(const s of matchedSide){ rawSide += s.count * weight(s.total); } }
-      const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0); const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0; const rawMax = 60 * 100; const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100)); const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1)); const finalScore = Math.max(0, Math.min(100, baseScore + bonus));
-      const allForTop=[...matchedMain].map(x=>({name:x.official, w:weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10=allForTop.slice(0,10); const seen=new Set(); let ultra=0,deep=0,med=0,light=0; for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_ULTRA) ultra++; else if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; }
-      return { score:Math.round(finalScore), baseScore:Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light}, copiesMain };
+    function bindRowClicks(){
+      jQuery('#jankTable tbody').off('click', 'a.cardlink');
+      jQuery('#jankTable tbody').on('click', 'a.cardlink', function(e){
+        e.preventDefault();
+        const key = this.getAttribute('data-key');
+        const row = allRows.find(x => x.key === key) || null;
+        if(!row) return;
+        showCardModal(row);
+      });
     }
 
-    function renderDeckScore(r){ const scoreEl=document.getElementById('scoreValue'); const bar=document.getElementById('scoreBar'); const flavor=document.getElementById('scoreFlavor'); const badges=document.getElementById('badges'); const top=document.getElementById('topJank'); scoreEl.textContent=r.score; bar.style.width=r.score+'%'; let msg=''; if(r.score>=90) msg='🌋 The Jank is STRONG with this one.'; else if(r.score>=70) msg='🧪 Maximum spice achieved — expect the unexpected.'; else if(r.score>=50) msg='🌶️ Solidly spicy — a connoisseur’s brew.'; else if(r.score>=30) msg='🧯 Respectable heat with room to get weird.'; else msg='🛡️ More staple than spice. Dare to jank harder?'; if(r.bonus>=15) msg+=' 🧪 Dense spice pocket detected.'; flavor.textContent=msg; badges.innerHTML = `<div>🧿 <b>Ultra‑jank (≤1):</b> ${r.tierCounts.ultra}</div><div>💀 <b>Deep‑jank (≤4):</b> ${r.tierCounts.deep}</div><div>🧪 <b>Medium‑jank (≤10):</b> ${r.tierCounts.med}</div><div>🔥 <b>Light‑jank (≤20):</b> ${r.tierCounts.light}</div><div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div><div>➕ <b>Density bonus:</b> +${r.bonus} (max +25)</div><div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>`; top.innerHTML=''; for(const t of r.top10){ const li=document.createElement('li'); const badge=tierOf(t.total); li.innerHTML=`${t.name}${badge?`<span class="tag"> ${badge}</span>`:''}`; top.appendChild(li); } }
+    function exportCSV(){
+      const v = Number(document.getElementById('thresholdNumber').value);
+      const set = document.getElementById('setFilter').value || '';
+      const rows = allRows.filter(r => r.total <= v && (!set || r.set === set) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
+      const header = ['Set','Card','Main Deck','Sideboard','Total'];
+      const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total].join(',')));
+      const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      const rtag = rarityState.size?`-rarity-${Array.from(rarityState).join('_')}`:'';
+      a.download = `4HM-jank-threshold-${v}${set?`-${set.replace(/\s+/g,'_')}`:''}${colorState.size?`-colors-${Array.from(colorState).join('')}`:''}${typeState.size?`-types-${Array.from(typeState).map(s=>s.replace(/\s+/g,'_')).join('+')}`:''}${superState.size?`-supers-${Array.from(superState).join('+')}`:''}${mvMin!=null?`-mvmin-${mvMin}`:''}${mvMax!=null?`-mvmax-${mvMax}`:''}${nameQuery?`-q-${nameQuery.replace(/[^a-z0-9]+/g,'')}`:''}${rtag}.csv`;
+      a.click();
+    }
 
-    function validateDeck(parsed){ return { ok:true, errors:[], mainCount:[...parsed.main.values()].reduce((a,b)=>a+b,0), sideCount:[...parsed.side.values()].reduce((a,b)=>a+b,0), leg6Distinct:0, leg5Distinct:0 }; }
-    function renderValidation(res){ const status=document.getElementById('valStatus'); const list=document.getElementById('valErrors'); const counts=document.getElementById('valCounts'); list.innerHTML=''; status.innerHTML = res.ok? `<span class="valid">✅ Deck is legal for 4HM under current rules.</span>` : `<span class="invalid">⛔ Deck is NOT legal — see issues below.</span>`; for(const e of res.errors){ const li=document.createElement('li'); li.textContent=e; list.appendChild(li);} counts.innerHTML = `<span class="tag">Main: ${res.mainCount}</span><span class="tag">Side: ${res.sideCount}</span>`; }
+    function updateQuery(max){ const url = new URL(location.href); if (max != null) url.searchParams.set('max', String(max)); history.replaceState(null, '', url); }
+    async function copySharableLink(){ try { await navigator.clipboard.writeText(location.href); alert('Sharable link copied to clipboard!'); } catch(e){ alert('Copy failed. You can manually copy the URL.'); } }
 
-    function typeLineText(row){ const cap=s=> s? s.split(/[\s,;]+/).filter(Boolean).map(x=>x.trim()).map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ') : ''; const sup=cap(row.supersStr); const typ=cap(row.typesStr); const sub=cap(row.subtypesStr); return `${[sup, typ].filter(Boolean).join(' ')}${sub? ' — '+sub : ''}` || '—'; }
-    function showCardModal(row){ const name=row.card; const isBan=BANNED.has(row.key) || HARD_BANNED.has(row.key); const isRes=RESTRICTED.has(row.key) && !isBan; document.getElementById('cardTitle').textContent=name||'Card'; document.getElementById('typeLine').textContent=typeLineText(row); document.getElementById('costSet').textContent=[row.set||'', row.manaCost||''].filter(Boolean).join('  •  '); document.getElementById('cardText').textContent=(row.text||'').trim() || '(no rules text in source)'; document.getElementById('artist').textContent=row.artist? `Artist — ${row.artist}` : 'Artist — ?'; const ptEl=document.getElementById('pt'); const isCreature=row.typesSet && row.typesSet.has('creature'); if(isCreature){ ptEl.style.display=''; ptEl.textContent=`${row.power||'—'}/${row.toughness||'—'}`; } else { ptEl.style.display='none'; ptEl.textContent=''; } document.getElementById('banInfo').innerHTML = isBan? '<span class="tag banned">BANNED</span>' : (isRes? '<span class="tag restricted">Restricted</span>' : ''); document.getElementById('cardModal').classList.add('open'); }
+    function bindDeckTools(){
+      const ta = document.getElementById('deckInput');
+      const file = document.getElementById('deckFile');
+      const btn = document.getElementById('analyzeBtn');
+      const includeSb = document.getElementById('includeSb');
+      if(!btn) return;
+      file?.addEventListener('change', async () => { try{ const f = file.files && file.files[0]; if(!f) return; const text = await f.text(); ta.value = text; }catch(e){ console.error(e); }});
+      btn.addEventListener('click', () => {
+        try{
+          const text = (ta.value || '').trim(); if(!text){ alert('Paste a decklist first.'); return; }
+          const parsed = parseDeck(text);
+          const report = scoreDeck(parsed, includeSb?.checked);
+          renderDeckScore(report);
+          const res = validateDeck(parsed);
+          renderValidation(res);
+        }catch(e){ console.error(e); showErr('Analyze failed: ' + (e && e.message ? e.message : e)); alert('Analyze failed. See error box above.'); }
+      });
+    }
+
+    function parseDeck(text){
+      const lines = text.split(/\r?\n/);
+      const main = new Map(); const side = new Map();
+      let toSide = false;
+      for(let raw of lines){
+        const line = raw.trim(); if(!line) continue;
+        if(/^side\s*board\s*:?/i.test(line)){ toSide = true; continue; }
+        const m = line.match(/^(\d+)?\s*(.+)$/); if(!m) continue;
+        const n = m[1] ? parseInt(m[1],10) : 1; let name = m[2];
+        name = name.replace(/\[[^\]]+\]/g,'').replace(/\([^\)]*\)$/,'').trim();
+        const key = normName(name);
+        const bucket = toSide ? side : main; bucket.set(key, (bucket.get(key)||0) + (isFinite(n)?n:1));
+      }
+      return {main, side};
+    }
+
+    const THRESH_ULTRA = 1, THRESH_DEEP = 4, THRESH_MED = 10, THRESH_LIGHT = 20;
+    function tierOf(total){ if (total <= THRESH_ULTRA) return 'Ultra‑Jank'; if (total <= THRESH_DEEP) return 'Deep Jank'; if (total <= THRESH_MED) return 'Medium Jank'; if (total <= THRESH_LIGHT) return 'Light Jank'; return ''; }
+
+    function scoreDeck(parsed, includeSide){
+      const toRow = new Map(); const nameMap = new Map();
+      for(const r of allRows){ const k = normName(r.card); if(!nameMap.has(k)) nameMap.set(k, r.card); if(!toRow.has(k)) toRow.set(k, r); }
+      function mapToArr(m){ return Array.from(m.entries()).map(([key,count])=>({key, count})); }
+      const mainArr = mapToArr(parsed.main); const sideArr = mapToArr(parsed.side);
+
+      const matchedMain = []; const matchedSide = []; const unmatched = [];
+      for(const item of mainArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Main: ${item.count} × ${item.key}`); continue; } matchedMain.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: row.total, count: item.count }); }
+      for(const item of sideArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Side: ${item.count} × ${item.key}`); continue; } matchedSide.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: row.total, count: item.count }); }
+
+      const logMax = Math.log(Math.max(1,MAX_TOTAL) + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
+      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; raw += m.count * weight(m.total); }
+      let rawSide = 0; if (includeSide){ for (const s of matchedSide){ rawSide += s.count * weight(s.total); } }
+
+      const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
+      const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
+      const rawMax = 60 * 100; const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
+      const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1)); const finalScore = Math.max(0, Math.min(100, baseScore + bonus));
+
+      const allForTop = [...matchedMain].map(x => ({name:x.official, w: weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
+
+      const seen = new Set(); let ultra=0, deep=0, med=0, light=0;
+      for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_ULTRA) ultra++; else if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; }
+
+      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light}, copiesMain };
+    }
+
+    function renderDeckScore(r){
+      const scoreEl = document.getElementById('scoreValue'); const bar = document.getElementById('scoreBar'); const flavor = document.getElementById('scoreFlavor'); const badges = document.getElementById('badges'); const top = document.getElementById('topJank');
+      scoreEl.textContent = r.score; bar.style.width = r.score + '%';
+      let msg = '';
+      if (r.score >= 90) msg = '🌋 The Jank is STRONG with this one.'; else if (r.score >= 70) msg = '🧪 Maximum spice achieved — expect the unexpected.'; else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.'; else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.'; else msg = '🛡️ More staple than spice. Dare to jank harder?'; if (r.bonus >= 15) msg += ' 🧪 Dense spice pocket detected.'; flavor.textContent = msg;
+      badges.innerHTML = `
+        <div>🧿 <b>Ultra‑jank (≤1 Total):</b> ${r.tierCounts.ultra}</div>
+        <div>💀 <b>Deep‑jank (≤4 Total):</b> ${r.tierCounts.deep}</div>
+        <div>🧪 <b>Medium‑jank (≤10 Total):</b> ${r.tierCounts.med}</div>
+        <div>🔥 <b>Light‑jank (≤20 Total):</b> ${r.tierCounts.light}</div>
+        <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div>
+        <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +25)</div>
+        <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>`;
+      top.innerHTML = '';
+      for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `${t.name}${badge?`<span class=\"tag\"> ${badge}</span>`:''}`; top.appendChild(li); }
+    }
+
+    function validateDeck(parsed){
+      const totals = new Map(); let mainCount = 0, sideCount = 0;
+      for(const [n,c] of parsed.main.entries()){ totals.set(n,(totals.get(n)||0)+c); mainCount+=c; }
+      for(const [n,c] of parsed.side.entries()){ totals.set(n,(totals.get(n)||0)+c); sideCount+=c; }
+      const errors = [];
+      if (mainCount < 60) errors.push(`Main deck has ${mainCount} cards (minimum is 60).`);
+      if (sideCount > 15) errors.push(`Sideboard has ${sideCount} cards (maximum is 15).`);
+
+      let legendaryCreatureInMain = 0; const seenJank = new Set();
+      for(const [key,count] of parsed.main.entries()){
+        const row = LEGAL_CARDS.get(key); if(!row) continue;
+        if(isLegendaryCreature(row)) legendaryCreatureInMain += count;
+        const t = Number(row['4hmTotal']||row.total||0);
+        if(t<=20 && !isLegendaryCreature(row)) { seenJank.add(key); }
+      }
+      const jankDistinctNonLegendMain = seenJank.size;
+
+      const leg6Unique = new Set(); const leg5Unique = new Set();
+      for(const [key,count] of totals.entries()){
+        if (BASIC_SET.has(key)) continue;
+        const row = LEGAL_CARDS.get(key);
+        if(!row){ errors.push(`Not in 4HM card pool: “${key}”`); continue; }
+        const disp = NAME_MAP.get(key) || String(row.name||row.card||key);
+        if (HARD_BANNED.has(key) || BANNED.has(key)) errors.push(`BANNED card: ${disp}`);
+        const isRestr = RESTRICTED.has(key) || String(row.supertypes||'').toLowerCase().includes('legendary') || typeHas(String(row.types),'enchantment');
+        if (isRestr && count > 1) errors.push(`Restricted (max 1): ${disp} has ${count}`);
+        if (!isRestr && count > 4) errors.push(`Too many copies (max 4): ${disp} has ${count}`);
+        const mv = Number(row.manaValue||row.cmc||0);
+        if (String(row.supertypes||'').toLowerCase().includes('legendary') && typeHas(String(row.types),'creature') && mv >= 6) leg6Unique.add(key);
+        if (String(row.supertypes||'').toLowerCase().includes('legendary') && typeHas(String(row.types),'creature') && mv === 5) leg5Unique.add(key);
+      }
+      if (leg6Unique.size > 2) errors.push(`6+ CMC Legendary group exceeded: ${leg6Unique.size} unique (max 2).`);
+      if (leg5Unique.size > 1) errors.push(`5 CMC Legendary group exceeded: ${leg5Unique.size} unique (max 1).`);
+      if (legendaryCreatureInMain < 6) errors.push(`Main deck must include at least 6 Legendary Creatures (has ${legendaryCreatureInMain}).`);
+      if (jankDistinctNonLegendMain < 4) errors.push(`Main deck must include at least 4 rarely‑played non‑Legendary Creature cards (Total ≤ 20). Currently ${jankDistinctNonLegendMain}.`);
+
+      return { ok: errors.length === 0, errors, mainCount, sideCount, totals, leg6Distinct: leg6Unique.size, leg5Distinct: leg5Unique.size };
+    }
+
+    function renderValidation(res){
+      const status = document.getElementById('valStatus');
+      const list = document.getElementById('valErrors');
+      const counts = document.getElementById('valCounts');
+      list.innerHTML = '';
+      if (res.ok){ status.innerHTML = `<span class="valid">✅ Deck is legal for 4HM under current rules.</span>`; }
+      else { status.innerHTML = `<span class="invalid">⛔ Deck is NOT legal — see issues below.</span>`; }
+      for(const e of res.errors){ const li = document.createElement('li'); li.textContent = e; list.appendChild(li); }
+      counts.innerHTML = `<span class="tag">Main: ${res.mainCount}</span><span class="tag">Side: ${res.sideCount}</span><span class="tag">leg6 unique: ${res.leg6Distinct}/2</span><span class="tag">leg5 unique: ${res.leg5Distinct}/1</span>`;
+    }
+
+    function typeLineText(row){
+      const cap = s => s ? s.split(/[\s,;]+/).filter(Boolean).map(x=>x.trim()).map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ') : '';
+      const sup = cap(row.supersStr);
+      const typ = cap(row.typesStr);
+      const sub = cap(row.subtypesStr);
+      return `${[sup, typ].filter(Boolean).join(' ')}${sub? ' — '+sub : ''}` || '—';
+    }
+
+    function showCardModal(row){
+      const name = row.card;
+      const isBan = BANNED.has(row.key) || HARD_BANNED.has(row.key);
+      const isRes = RESTRICTED.has(row.key) && !isBan;
+      document.getElementById('cardTitle').textContent = name || 'Card';
+      document.getElementById('typeLine').textContent = typeLineText(row);
+      document.getElementById('costSet').textContent = [row.set||'', row.manaCost||''].filter(Boolean).join('  •  ');
+      document.getElementById('cardText').textContent = (row.text || '').trim() || '(no rules text in source)';
+      document.getElementById('artist').textContent = row.artist? `Artist — ${row.artist}` : 'Artist — ?';
+      const ptEl = document.getElementById('pt');
+const isCreature = row.typesSet && row.typesSet.has('creature');
+if (isCreature) {
+  ptEl.style.display = '';
+  ptEl.textContent = `${row.power || '—'}/${row.toughness || '—'}`;
+} else {
+  ptEl.style.display = 'none';
+  ptEl.textContent = '';
+}
+
+      document.getElementById('banInfo').innerHTML = isBan? '<span class="tag banned">BANNED</span>' : (isRes? '<span class="tag restricted">Restricted</span>' : '');
+      document.getElementById('cardModal').classList.add('open');
+    }
     document.getElementById('modalClose').addEventListener('click', ()=> document.getElementById('cardModal').classList.remove('open'));
     document.getElementById('cardModal').addEventListener('click', (e)=>{ if(e.target.id==='cardModal') e.currentTarget.classList.remove('open'); });
   </script>
