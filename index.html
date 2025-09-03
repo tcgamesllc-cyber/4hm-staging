@@ -26,11 +26,20 @@
     .panel { background:var(--card); border-radius:16px; padding:18px; box-shadow:0 6px 20px rgba(0,0,0,.25); margin-bottom:16px; }
 
     .controls { display:grid; gap:12px; grid-template-columns: 1fr; align-items:center; }
-    .row { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
-    .pill { background:#f2e6c6; border:1px solid #c8a96c; color:var(--ink); padding:8px 12px; border-radius:999px; display:inline-flex; align-items:center; gap:10px; }
+
+    /*
+      MOBILE-FRIENDLY FILTER WRAP TUNING
+      - Let rows wrap (no sideways scroll)
+      - Let each pill wrap internally and grow to full width on small screens
+    */
+    .row { display:flex; gap:14px; align-items:center; flex-wrap:wrap; overflow-x:visible; }
+    .pill { background:#f2e6c6; border:1px solid #c8a96c; color:var(--ink); padding:8px 12px; border-radius:12px; display:flex; align-items:center; gap:10px; flex:1 1 320px; min-width:260px; flex-wrap:wrap; }
+    .pill label { display:inline-flex; align-items:center; gap:6px; margin-right:10px; }
+    .actions { margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; }
+
     .muted { color:var(--muted); font-size:13px; }
     .kpi { font-weight:700; color:var(--accent); }
-    .actions { margin-left:auto; display:flex; gap:10px; }
+
     .btn { background:#fdf6e3; border:1px solid #c8a96c; color:#3a240a; padding:8px 12px; border-radius:10px; cursor:pointer; font-family:"Book Antiqua", Palatino, serif; }
     .btn:hover { background:#f8edd4; }
     .btn-mini { padding: 4px 8px; font-size: 13px; border-radius: 8px; }
@@ -89,16 +98,24 @@
       body { border-width: 16px; }
       header h1 { font-size: 24px; }
       header .sub { font-size: 13px; }
-      .wrap { padding: 0 8px; }
+
+      .wrap { padding: 0 8px; overflow-x:hidden; }
       .panel { border-radius: 12px; padding: 12px; }
-      .pill { padding: 6px 8px; }
+
+      /* stack the filters, full width pills */
+      .row { flex-wrap: wrap; flex-direction: row; gap:10px; overflow-x:visible; }
+      .pill { padding: 8px 10px; width:100%; min-width:0; border-radius:12px; }
+
       input[type="range"] { width: 100%; }
       #thresholdNumber { width: 72px; }
+
       table.dataTable { border-width: 1px; }
       table.dataTable thead th { font-size: 14px; }
       table.dataTable tbody td { font-size: 14px; }
+
       .modal-card { max-height: 80vh; overflow:auto; }
       .search-input { width: 100%; }
+      .actions { width:100%; justify-content:flex-start; }
     }
   </style>
 </head>
@@ -472,7 +489,7 @@
     function populateRarityFilters(){
       const host = document.getElementById('rarityFilters');
       const rars = Array.from(ALL_RARITIES).sort();
-      host.innerHTML = rars.map(r=>`<label><input type="checkbox" class="rf" data-r="${r}"> ${r.charAt(0).toUpperCase()+r.slice(1)}</label>`).join(' ');
+      host.innerHTML = rars.map(r=>`<label><input type=\"checkbox\" class=\"rf\" data-r=\"${r}\"> ${r.charAt(0).toUpperCase()+r.slice(1)}</label>`).join(' ');
       host.querySelectorAll('.rf').forEach(cb=> cb.addEventListener('change', ()=>{ const r = cb.dataset.r; if(cb.checked) rarityState.add(r); else rarityState.delete(r); redraw(); }));
     }
 
@@ -507,7 +524,7 @@
         const isBan = BANNED.has(r.key) || HARD_BANNED.has(r.key);
         const isRes = RESTRICTED.has(r.key);
         const tags = `${isBan?'<span class="tag banned">BANNED</span>':''}${(!isBan && isRes)?'<span class="tag restricted">Restricted</span>':''}`;
-        const link = `<a href="#" class="cardlink" data-key="${r.key}">${r.card}</a>${tags}`;
+        const link = `<a href=\"#\" class=\"cardlink\" data-key=\"${r.key}\">${r.card}</a>${tags}`;
         return [r.set, link, r.main, r.side, r.total];
       });
       if(dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); bindRowClicks(); }
@@ -697,7 +714,16 @@
       document.getElementById('costSet').textContent = [row.set||'', row.manaCost||''].filter(Boolean).join('  •  ');
       document.getElementById('cardText').textContent = (row.text || '').trim() || '(no rules text in source)';
       document.getElementById('artist').textContent = row.artist? `Artist — ${row.artist}` : 'Artist — ?';
-      document.getElementById('pt').textContent = (row.power || row.toughness) ? `${row.power||'—'}/${row.toughness||'—'}` : '—/—';
+      // P/T only on (Artifact) Creatures
+      const ptEl = document.getElementById('pt');
+      const isCreature = row.typesSet && row.typesSet.has('creature');
+      if (isCreature) {
+        ptEl.style.display = '';
+        ptEl.textContent = `${row.power || '—'}/${row.toughness || '—'}`;
+      } else {
+        ptEl.style.display = 'none';
+        ptEl.textContent = '';
+      }
       document.getElementById('banInfo').innerHTML = isBan? '<span class="tag banned">BANNED</span>' : (isRes? '<span class="tag restricted">Restricted</span>' : '');
       document.getElementById('cardModal').classList.add('open');
     }
