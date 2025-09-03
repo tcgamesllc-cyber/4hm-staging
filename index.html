@@ -130,19 +130,21 @@
   <!-- NEW WELCOME & INSTRUCTIONS PANEL -->
   <div class="wrap">
     <div class="panel" style="background:#fff9e6; border:2px solid #c8a96c;">
-      <h2 style="margin:0 0 10px 0; color:#3a240a;">👋 Welcome to the Four Horsemen (4HM) Old School Magic Brewing App!</h2>
-      <p>Four Horsemen (4HM) is a unique Old School Magic format using only cards from <b>Arabian Nights, Antiquities, Legends, The Dark</b>, the five basic lands, and ABUR duals. It’s an unsolved format where forgotten cards and wild brews shine.</p>
+      
       
       <h3 style="margin-top:12px;">🔎 Quick How‑To</h3>
       <ul class="small">
-        <li><b>Filters:</b> Narrow cards by set, color, type, rarity, mana value, and/or jank threshold.</li>
+        <li><b>Filters:</b> Narrow cards by set, color, type, rarity, mana value, and/or jank threshold. (The threshold value represents the maximum number of times a card has appeared in all decks in all prior 4HM tournaments.)</li>
         <li><b>Search:</b> Find any card by name.</li>
-        <li><b>Deck Validator:</b> Paste your decklist (Tolaria/ManaStack/Moxfield style) to check current tournament legality and get a Jank Score.</li>
-        <li><b>Card Details:</b> Click a card name in the table to view card info including oracle text.</li>
         <li><b>Export:</b> Save your filtered view as a CSV or share your settings with a link.</li>
+        <li><b>Card Details:</b> Click a card name in the table to view card info including oracle text.</li>
+        <li><b>Deck Validator:</b> Paste your decklist (Tolaria/ManaStack/Moxfield style) to check current tournament legality and get a Jank Score.</li>
+        
       </ul>
 
       <h3 style="margin-top:12px;">📚 Learn More & Community</h3>
+      <p>Four Horsemen (4HM) is a unique Old School Magic format using only cards from <b>Arabian Nights, Antiquities, Legends, The Dark</b>, the five basic lands, and ABUR duals. It’s an unsolved format where forgotten cards and wild brews shine.</p>
+      
       <p class="small">
         • <a href="https://www.fourhorsemenmagic.com/current-tournament" target="_blank">Current 4HM Tournament</a><br/>
         • <a href="https://bit.ly/4HMRULES" target="_blank">Official 4HM Rules</a><br/>
@@ -269,8 +271,15 @@ SIDEBOARD:
             <label style="margin-left:8px;"><input type="checkbox" id="includeSb"/> Include sideboard in score</label>
           </div>
         </div>
+        <div class="score-badge" style="flex:1;">
+          <div><b>Deck Validator Results</b></div>
+          <div id="valStatus" class="small">—</div>
+          <ul id="valErrors" class="errlist"></ul>
+          <div id="valCounts" class="small"></div>
+          <div class="small">Special limits: <b>6+ CMC Legendary Creatures</b> — max <b>2 unique</b>. <b>5 CMC Legendary Creatures</b> — max <b>1 unique</b>. Legendary Creatures do <i>not</i> count toward the “4 rarely‑played” requirement.</div>
+        </div>
         <div class="score-hero">
-          <div class="score-badge">
+          <div class="score-badge" style="min-width:260px;">
             <div><b>Jank Score</b> <span id="scoreValue" class="kpi">—</span>/100</div>
             <div class="meter" aria-hidden="true"><div id="scoreBar"></div></div>
             <div id="scoreFlavor" class="small">Paste a deck to score it.</div>
@@ -285,13 +294,7 @@ SIDEBOARD:
           <div><b>Top 10 Jankiest in Deck</b></div>
           <ol id="topJank" class="list"></ol>
         </div>
-        <div class="score-badge" style="flex:1;">
-          <div><b>Deck Validator Results</b></div>
-          <div id="valStatus" class="small">—</div>
-          <ul id="valErrors" class="errlist"></ul>
-          <div id="valCounts" class="small"></div>
-          <div class="small">Special limits: <b>6+ CMC Legendary Creatures</b> — max <b>2 unique</b>. <b>5 CMC Legendary Creatures</b> — max <b>1 unique</b>. Legendary Creatures do <i>not</i> count toward the “4 rarely‑played” requirement.</div>
-        </div>
+        
       </div>
     </div>
 
@@ -669,7 +672,7 @@ SIDEBOARD:
       const scoreEl = document.getElementById('scoreValue'); const bar = document.getElementById('scoreBar'); const flavor = document.getElementById('scoreFlavor'); const badges = document.getElementById('badges'); const top = document.getElementById('topJank');
       scoreEl.textContent = r.score; bar.style.width = r.score + '%';
       let msg = '';
-      if (r.score >= 90) msg = '🌋 The Jank is STRONG with this one.'; else if (r.score >= 70) msg = '🧪 Maximum spice achieved — expect the unexpected.'; else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.'; else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.'; else msg = '🛡️ More staple than spice. Dare to jank harder?'; if (r.bonus >= 15) msg += ' 🧪 Dense spice pocket detected.'; flavor.textContent = msg;
+      if (r.score >= 90) msg = '🧪 Maximum spice achieved — expect the unexpected.'; else if (r.score >= 70) msg = '🌋 The Jank is STRONG with this one.'; else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.'; else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.'; else msg = '🛡️ More staple than spice. Dare to jank harder?'; if (r.bonus >= 15) msg += ' 🧪 Dense spice pocket detected.'; flavor.textContent = msg;
       badges.innerHTML = `
         <div>🧿 <b>Ultra‑jank (≤1 Total):</b> ${r.tierCounts.ultra}</div>
         <div>💀 <b>Deep‑jank (≤4 Total):</b> ${r.tierCounts.deep}</div>
