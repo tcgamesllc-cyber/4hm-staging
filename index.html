@@ -16,7 +16,7 @@
     :root { --bg:#fdf6e3; --card:#f9f2dd; --ink:#2b1a08; --muted:#7c6a4c; --accent:#8b4513; --ok:#1f7a1f; --bad:#8b1a1a; --tag:#5a3816; --link:#174ea6; }
     html, body { margin:0; padding:0; min-height:100%; box-sizing:border-box; background: var(--bg); color:var(--ink); font:16px/1.5 "Book Antiqua", Palatino, serif; }
 
-    body { background-image: radial-gradient(1200px 700px at 20% 10%, #fff9e6, rgba(0,0,0,0) 70%), radial-gradient(1000px 600px at 80% 20%, #f8edd4, rgba(0,0,0,0) 70%), radial-gradient(1400px 800px at 50% 90%, #f3e4c1, rgba(0,0,0,0) 70%), linear-gradient(#fdf6e3, #fdf6e3); border:24px solid transparent; border-image-source: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3e%3crect width='80' height='80' fill='%23d6b87a'/%3e%3cg opacity='0.25'%3e%3ccircle cx='10' cy='10' r='2' fill='%238d6e3f'/%3e%3ccircle cx='40' cy='20' r='1.6' fill='%238d6e3f'/%3e%3ccircle cx='65' cy='12' r='1.8' fill='%238d6e3f'/%3e%3ccircle cx='20' cy='55' r='2' fill='%238d6e3f'/%3e%3ccircle cx='70' cy='60' r='1.4' fill='%238d6e3f'/%3e%3cpath d='M0 0h80v80H0z' fill='none' stroke='%23b89654' stroke-width='2'/%3e%3c/g%3e%3c/svg%3e"); border-image-slice: 100; border-image-repeat: round; }
+    body { background-image: radial-gradient(1200px 700px at 20% 10%, #fff9e6, rgba(0,0,0,0) 70%), radial-gradient(1000px 600px at 80% 20%, #f8edd4, rgba(0,0,0,0) 70%), radial-gradient(1400px 800px at 50% 90%, #f3e4c1, rgba(0,0,0,0) 70%), linear-gradient(#fdf6e3, #fdf6e3); border:24px solid transparent; border-image-source:url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3e%3crect width='80' height='80' fill='%23d6b87a'/%3e%3cg opacity='0.25'%3e%3cpath d='M0 0h80v80H0z' fill='none' stroke='%23b89654' stroke-width='2'/%3e%3c/g%3e%3c/svg%3e"); border-image-slice:100; border-image-repeat:round; }
 
     header { background: radial-gradient(circle at top left, #fff9e6, #fdf6e3 60%, #f3e4c1); border-bottom:4px solid #d6b87a; border-top:4px solid #d6b87a; box-shadow:0 4px 12px rgba(0,0,0,0.35); padding:24px 16px; text-align:center; position:relative; z-index:1; }
     header h1 { margin:0; font-size:32px; color:#3a240a; text-shadow:1px 1px 0 #fff; }
@@ -27,11 +27,7 @@
 
     .controls { display:grid; gap:12px; grid-template-columns: 1fr; align-items:center; }
 
-    /*
-      MOBILE-FRIENDLY FILTER WRAP TUNING
-      - Let rows wrap (no sideways scroll)
-      - Let each pill wrap internally and grow to full width on small screens
-    */
+    /* Filter layout */
     .row { display:flex; gap:14px; align-items:center; flex-wrap:wrap; overflow-x:visible; }
     .pill { background:#f2e6c6; border:1px solid #c8a96c; color:var(--ink); padding:8px 12px; border-radius:12px; display:flex; align-items:center; gap:10px; flex:1 1 320px; min-width:260px; flex-wrap:wrap; }
     .pill label { display:inline-flex; align-items:center; gap:6px; margin-right:10px; }
@@ -94,6 +90,10 @@
     .search-input { width:220px; background:#fff9e6; color:#2b1a08; border:1px solid #c8a96c; border-radius:8px; padding:6px 8px; }
     .num-input { width:82px; background:#fff9e6; color:#2b1a08; border:1px solid #c8a96c; border-radius:8px; padding:6px 8px; }
 
+    /* Mobile drawer */
+    .filters-toggle { display:none; margin:8px 0; padding:8px 14px; font-size:16px; border:1px solid #c8a96c; border-radius:8px; background:#f2e6c6; cursor:pointer; }
+    .filter-count { display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px; border:1px solid #c8a96c; background:#fff9e6; font-size:13px; }
+
     @media (max-width: 640px) {
       body { border-width: 16px; }
       header h1 { font-size: 24px; }
@@ -116,6 +116,10 @@
       .modal-card { max-height: 80vh; overflow:auto; }
       .search-input { width: 100%; }
       .actions { width:100%; justify-content:flex-start; }
+
+      .filters-toggle { display:block; width:100%; }
+      .filters-panel { display:none; margin-top:8px; padding:10px; border:1px solid #c8a96c; border-radius:10px; background:#fffdf7; }
+      body.filters-open .filters-panel { display:block; }
     }
   </style>
 </head>
@@ -126,7 +130,13 @@
   </header>
 
   <div class="wrap">
-    <div class="panel">
+    <!-- Toggle only visible on small screens -->
+    <button id="filtersToggle" class="filters-toggle"
+            onclick="document.body.classList.toggle('filters-open'); window.updateFilterCount?.();">
+      ☰ Filters <span id="filterCount" class="filter-count">0</span>
+    </button>
+
+    <div class="panel filters-panel">
       <div class="controls">
         <div class="row">
           <div class="pill" title="Set the maximum total appearances to include">
@@ -227,16 +237,7 @@
       <div class="grid">
         <div>
           <label for="deckInput" class="muted">Paste your Tolaria/ManaStack/Moxfield‑style list here (sideboard optional):</label>
-          <textarea id="deckInput" placeholder="e.g.
-3 Sword of the Ages
-1 Sylvan Library
-1 Vaevictis Asmadi
-...            
-
-SIDEBOARD:
-1 Bazaar of Baghdad
-3 Crumble
-..."></textarea>
+          <textarea id="deckInput" placeholder="e.g. \n\n3 Sword of the Ages\n1 Sylvan Library\n1 Vaevictis Asmadi\n...            \n\nSIDEBOARD:\n1 Bazaar of Baghdad\n3 Crumble\n..."></textarea>
           <div class="small" style="margin-top:6px;">
             <input type="file" id="deckFile" accept=".txt,.dek,.dec"/>
             <button id="analyzeBtn" class="btn">Analyze &amp; Validate Deck</button>
@@ -307,12 +308,16 @@ SIDEBOARD:
     let allRows = [];
     let dataTable = null; let MAX_TOTAL = 0;
 
-    let LEGAL_CARDS = new Map();
-    let NAME_MAP = new Map();
+    // Maps and sets for validator
+    let LEGAL_CARDS = new Map(); // key -> full row (from CSV)
+    let NAME_MAP = new Map();    // key -> display name
     let BANNED = new Set();
     let RESTRICTED = new Set();
-    const BASIC_SET = new Set(["plains","island","swamp","mountain","forest"]);
-    const HARD_BANNED = new Set(["bloodmoon","karakas","arenaoftheancients","bronzetablet","cityinabottle","golgothiansylex","jeweledbird","libraryofalexandria","moat","rebirth","shahrazad","tempestefreet"]);
+
+    const BASIC_SET = new Set(["plains","island","swamp","mountain","forest"]); // basic land names (normalized)
+    const HARD_BANNED = new Set(["arenaoftheancients","bronzetablet","cityinabottle","golgothiansylex","jeweledbird","libraryofalexandria","moat","rebirth","shahrazad","tempestefreet"]);
+
+    // Legendary grouping helper sets (computed from CSV)
     let LEG6PLUS = new Set();
     let LEG5 = new Set();
 
@@ -412,11 +417,15 @@ SIDEBOARD:
 
         NAME_MAP.set(key, String(rawName));
         LEGAL_CARDS.set(key, r);
+
+        // These flags may also come from BR sheet; pool's booleans are honored too
         if(String(r.banned).toLowerCase()==='true') BANNED.add(key);
         if(String(r.restricted).toLowerCase()==='true') RESTRICTED.add(key);
-        if(typesSet.has('enchantment') || supersSet.has('legendary')) RESTRICTED.add(key);
+
+        // Compute legendary group helpers
         if(typesSet.has('creature') && supersSet.has('legendary') && mv>=6) LEG6PLUS.add(key);
         if(typesSet.has('creature') && supersSet.has('legendary') && mv===5) LEG5.add(key);
+
         if(tot>MAX_TOTAL) MAX_TOTAL = tot;
 
         allRows.push({ set, card: String(rawName), main, side, total: tot, colors: colorSet, colorless: colorSet.size===0, text, manaCost, mv, key, typesStr, supersStr, subtypesStr, typesSet, supersSet, rarity, artist, power, toughness });
@@ -447,25 +456,25 @@ SIDEBOARD:
       box.min = '0'; box.max = String(Math.max(1,MAX_TOTAL)); box.value = String(initialAbs);
       label.textContent = Number(initialAbs).toLocaleString();
 
-      const syncFromSlider = (sVal) => { const abs = sliderToThreshold(Number(sVal)); box.value = String(abs); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); };
-      const syncFromBox = (bVal) => { const abs = Math.max(0, Math.min(Number(bVal)||0, Math.max(1,MAX_TOTAL))); slider.value = String(thresholdToSlider(abs)); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); };
+      const syncFromSlider = (sVal) => { const abs = sliderToThreshold(Number(sVal)); box.value = String(abs); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); updateFilterCount(); };
+      const syncFromBox = (bVal) => { const abs = Math.max(0, Math.min(Number(bVal)||0, Math.max(1,MAX_TOTAL))); slider.value = String(thresholdToSlider(abs)); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); updateFilterCount(); };
       slider.addEventListener('input', e=>syncFromSlider(e.target.value));
       box.addEventListener('input', e=>syncFromBox(e.target.value));
-      document.querySelectorAll('#quickPresets .btn-mini').forEach(b=> b.addEventListener('click',()=>{ const abs=Math.min(Number(b.dataset.th), Math.max(1,MAX_TOTAL)); box.value=String(abs); slider.value=String(thresholdToSlider(abs)); label.textContent=abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); }));
+      document.querySelectorAll('#quickPresets .btn-mini').forEach(b=> b.addEventListener('click',()=>{ const abs=Math.min(Number(b.dataset.th), Math.max(1,MAX_TOTAL)); box.value=String(abs); slider.value=String(thresholdToSlider(abs)); label.textContent=abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); updateFilterCount(); }));
 
       populateSetFilter(allRows.map(r => r.set));
       populateRarityFilters();
 
-      document.querySelectorAll('.cf').forEach(cb => { cb.addEventListener('change', () => { const c = cb.dataset.c; if (cb.checked) colorState.add(c); else colorState.delete(c); redraw(); }); });
+      document.querySelectorAll('.cf').forEach(cb => { cb.addEventListener('change', () => { const c = cb.dataset.c; if (cb.checked) colorState.add(c); else colorState.delete(c); redraw(); updateFilterCount(); }); });
       const modeBox = document.getElementById('colorModeAll');
-      if (modeBox){ modeBox.addEventListener('change', (e)=>{ colorModeAll = !!e.target.checked; redraw(); }); }
+      if (modeBox){ modeBox.addEventListener('change', (e)=>{ colorModeAll = !!e.target.checked; redraw(); updateFilterCount(); }); }
 
-      document.querySelectorAll('.tf').forEach(cb => { cb.addEventListener('change', () => { const t = cb.dataset.t; if (cb.checked) typeState.add(t); else typeState.delete(t); redraw(); }); });
-      document.querySelectorAll('.sf').forEach(cb => { cb.addEventListener('change', () => { const s = cb.dataset.s; if (cb.checked) superState.add(s); else superState.delete(s); redraw(); }); });
+      document.querySelectorAll('.tf').forEach(cb => { cb.addEventListener('change', () => { const t = cb.dataset.t; if (cb.checked) typeState.add(t); else typeState.delete(t); redraw(); updateFilterCount(); }); });
+      document.querySelectorAll('.sf').forEach(cb => { cb.addEventListener('change', () => { const s = cb.dataset.s; if (cb.checked) superState.add(s); else superState.delete(s); redraw(); updateFilterCount(); }); });
 
-      document.getElementById('nameSearch').addEventListener('input', (e)=>{ nameQuery = String(e.target.value||'').trim().toLowerCase(); redraw(); });
-      document.getElementById('mvMin').addEventListener('input', e=>{ const v = e.target.value; mvMin = v===''? null : Number(v); redraw(); });
-      document.getElementById('mvMax').addEventListener('input', e=>{ const v = e.target.value; mvMax = v===''? null : Number(v); redraw(); });
+      document.getElementById('nameSearch').addEventListener('input', (e)=>{ nameQuery = String(e.target.value||'').trim().toLowerCase(); redraw(); updateFilterCount(); });
+      document.getElementById('mvMin').addEventListener('input', e=>{ const v = e.target.value; mvMin = v===''? null : Number(v); redraw(); updateFilterCount(); });
+      document.getElementById('mvMax').addEventListener('input', e=>{ const v = e.target.value; mvMax = v===''? null : Number(v); redraw(); updateFilterCount(); });
 
       document.getElementById('resetFilters').addEventListener('click', ()=>{
         // Clear UI controls
@@ -477,6 +486,7 @@ SIDEBOARD:
         document.getElementById('setFilter').value='';
         const abs = Number(document.getElementById('thresholdNumber').value)||0;
         renderTable(abs, '');
+        updateFilterCount();
       });
 
       renderTable(initialAbs, params.get('set'));
@@ -492,14 +502,14 @@ SIDEBOARD:
       const uniq = Array.from(new Set(sets)).sort((a,b)=>a.localeCompare(b));
       uniq.forEach(s => { const opt = document.createElement('option'); opt.value = s; opt.textContent = s; sel.appendChild(opt); });
       const qSet = params.get('set'); if(qSet) sel.value = qSet;
-      sel.addEventListener('change', () => { redraw(); updateQuery(Number(document.getElementById('thresholdNumber').value)); });
+      sel.addEventListener('change', () => { redraw(); updateQuery(Number(document.getElementById('thresholdNumber').value)); updateFilterCount(); });
     }
 
     function populateRarityFilters(){
       const host = document.getElementById('rarityFilters');
       const rars = Array.from(ALL_RARITIES).sort();
       host.innerHTML = rars.map(r=>`<label><input type=\"checkbox\" class=\"rf\" data-r=\"${r}\"> ${r.charAt(0).toUpperCase()+r.slice(1)}</label>`).join(' ');
-      host.querySelectorAll('.rf').forEach(cb=> cb.addEventListener('change', ()=>{ const r = cb.dataset.r; if(cb.checked) rarityState.add(r); else rarityState.delete(r); redraw(); }));
+      host.querySelectorAll('.rf').forEach(cb=> cb.addEventListener('change', ()=>{ const r = cb.dataset.r; if(cb.checked) rarityState.add(r); else rarityState.delete(r); redraw(); updateFilterCount(); }));
     }
 
     function passesColorFilter(row){
@@ -538,7 +548,7 @@ SIDEBOARD:
       });
       if(dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); bindRowClicks(); }
       else {
-        dataTable = jQuery('#jankTable').DataTable({ data, columns: [ { title: 'Set' }, { title: 'Card' }, { title: 'Main Deck' }, { title: 'Sideboard' }, { title: 'Total' } ], order: [[4, 'desc'], [0, 'asc'], [1, 'asc']], pageLength: 25, deferRender: true, dom: 'tip', createdRow: function(row, data){ /* keep */ } });
+        dataTable = jQuery('#jankTable').DataTable({ data, columns: [ { title: 'Set' }, { title: 'Card' }, { title: 'Main Deck' }, { title: 'Sideboard' }, { title: 'Total' } ], order: [[4, 'desc'], [0, 'asc'], [1, 'asc']], pageLength: 25, deferRender: true, dom: 'tip' });
         const topInfo = document.getElementById('topInfo');
         if(topInfo){ dataTable.on('draw', function(){ const info = dataTable.page.info(); topInfo.textContent = `Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`; }); dataTable.draw(); }
         const meta = document.getElementById('meta');
@@ -574,6 +584,7 @@ SIDEBOARD:
     function updateQuery(max){ const url = new URL(location.href); if (max != null) url.searchParams.set('max', String(max)); history.replaceState(null, '', url); }
     async function copySharableLink(){ try { await navigator.clipboard.writeText(location.href); alert('Sharable link copied to clipboard!'); } catch(e){ alert('Copy failed. You can manually copy the URL.'); } }
 
+    // ===== Deck tools =====
     function bindDeckTools(){
       const ta = document.getElementById('deckInput');
       const file = document.getElementById('deckFile');
@@ -656,43 +667,58 @@ SIDEBOARD:
       for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `${t.name}${badge?`<span class=\"tag\"> ${badge}</span>`:''}`; top.appendChild(li); }
     }
 
+    // ===== Deck validator =====
     function validateDeck(parsed){
+      // Tally totals across main + side
       const totals = new Map(); let mainCount = 0, sideCount = 0;
       for(const [n,c] of parsed.main.entries()){ totals.set(n,(totals.get(n)||0)+c); mainCount+=c; }
       for(const [n,c] of parsed.side.entries()){ totals.set(n,(totals.get(n)||0)+c); sideCount+=c; }
+
       const errors = [];
       if (mainCount < 60) errors.push(`Main deck has ${mainCount} cards (minimum is 60).`);
       if (sideCount > 15) errors.push(`Sideboard has ${sideCount} cards (maximum is 15).`);
 
-      let legendaryCreatureInMain = 0; const seenJank = new Set();
+      // Rule helpers
+      const leg6Unique = new Set();
+      const leg5Unique = new Set();
+      let legendaryCreatureInMain = 0;
+      const nonLegendRareSet = new Set();
+
+      // Validate per-card limits and flags
+      for(const [key,count] of totals.entries()){
+        const dispName = NAME_MAP.get(key) || key; // friendly name
+        const row = LEGAL_CARDS.get(key);
+        if(!row){ errors.push(`Not in 4HM card pool: “${dispName}”`); continue; }
+
+        // banned / restricted
+        if (HARD_BANNED.has(key) || BANNED.has(key)) errors.push(`BANNED card: ${dispName}`);
+        const isRestr = RESTRICTED.has(key) || String(row.supertypes||'').toLowerCase().includes('legendary') || typeHas(String(row.types),'enchantment');
+        if (isRestr && count > 1) errors.push(`Restricted (max 1): ${dispName} has ${count}`);
+        if (!isRestr && !BASIC_SET.has(key) && count > 4) errors.push(`Too many copies (max 4): ${dispName} has ${count}`);
+
+        // Legendary groupings
+        const mv = Number(row.manaValue||row.cmc||0);
+        const isLeg = String(row.supertypes||'').toLowerCase().includes('legendary');
+        const isCre = typeHas(String(row.types),'creature');
+        if (isLeg && isCre && mv >= 6) leg6Unique.add(key);
+        if (isLeg && isCre && mv === 5) leg5Unique.add(key);
+      }
+
+      // Count legendary creatures present in MAIN only
       for(const [key,count] of parsed.main.entries()){
         const row = LEGAL_CARDS.get(key); if(!row) continue;
         if(isLegendaryCreature(row)) legendaryCreatureInMain += count;
         const t = Number(row['4hmTotal']||row.total||0);
-        if(t<=20 && !isLegendaryCreature(row)) { seenJank.add(key); }
+        if(t<=20 && !isLegendaryCreature(row)) { nonLegendRareSet.add(key); }
       }
-      const jankDistinctNonLegendMain = seenJank.size;
 
-      const leg6Unique = new Set(); const leg5Unique = new Set();
-      for(const [key,count] of totals.entries()){
-        if (BASIC_SET.has(key)) continue;
-        const row = LEGAL_CARDS.get(key);
-        if(!row){ errors.push(`Not in 4HM card pool: “${key}”`); continue; }
-        const disp = NAME_MAP.get(key) || String(row.name||row.card||key);
-        if (HARD_BANNED.has(key) || BANNED.has(key)) errors.push(`BANNED card: ${disp}`);
-        const isRestr = RESTRICTED.has(key) || String(row.supertypes||'').toLowerCase().includes('legendary') || typeHas(String(row.types),'enchantment');
-        if (isRestr && count > 1) errors.push(`Restricted (max 1): ${disp} has ${count}`);
-        if (!isRestr && count > 4) errors.push(`Too many copies (max 4): ${disp} has ${count}`);
-        const mv = Number(row.manaValue||row.cmc||0);
-        if (String(row.supertypes||'').toLowerCase().includes('legendary') && typeHas(String(row.types),'creature') && mv >= 6) leg6Unique.add(key);
-        if (String(row.supertypes||'').toLowerCase().includes('legendary') && typeHas(String(row.types),'creature') && mv === 5) leg5Unique.add(key);
-      }
       if (leg6Unique.size > 2) errors.push(`6+ CMC Legendary group exceeded: ${leg6Unique.size} unique (max 2).`);
       if (leg5Unique.size > 1) errors.push(`5 CMC Legendary group exceeded: ${leg5Unique.size} unique (max 1).`);
-      if (legendaryCreatureInMain < 6) errors.push(`Main deck must include at least 6 Legendary Creatures (has ${legendaryCreatureInMain}).`);
-      if (jankDistinctNonLegendMain < 4) errors.push(`Main deck must include at least 4 rarely‑played non‑Legendary Creature cards (Total ≤ 20). Currently ${jankDistinctNonLegendMain}.`);
 
-      return { ok: errors.length === 0, errors, mainCount, sideCount, totals, leg6Distinct: leg6Unique.size, leg5Distinct: leg5Unique.size };
+      if (legendaryCreatureInMain < 6) errors.push(`Main deck must include at least 6 Legendary Creatures (has ${legendaryCreatureInMain}).`);
+      if (nonLegendRareSet.size < 4) errors.push(`Main deck must include at least 4 rarely‑played non‑Legendary cards (Total ≤ 20). Currently ${nonLegendRareSet.size}.`);
+
+      return { ok: errors.length === 0, errors, mainCount, sideCount, leg6Distinct: leg6Unique.size, leg5Distinct: leg5Unique.size };
     }
 
     function renderValidation(res){
@@ -700,44 +726,61 @@ SIDEBOARD:
       const list = document.getElementById('valErrors');
       const counts = document.getElementById('valCounts');
       list.innerHTML = '';
-      if (res.ok){ status.innerHTML = `<span class="valid">✅ Deck is legal for 4HM under current rules.</span>`; }
-      else { status.innerHTML = `<span class="invalid">⛔ Deck is NOT legal — see issues below.</span>`; }
+      status.innerHTML = res.ok? `<span class="valid">✅ Deck is legal for 4HM under current rules.</span>` : `<span class="invalid">⛔ Deck is NOT legal — see issues below.</span>`;
       for(const e of res.errors){ const li = document.createElement('li'); li.textContent = e; list.appendChild(li); }
       counts.innerHTML = `<span class="tag">Main: ${res.mainCount}</span><span class="tag">Side: ${res.sideCount}</span><span class="tag">leg6 unique: ${res.leg6Distinct}/2</span><span class="tag">leg5 unique: ${res.leg5Distinct}/1</span>`;
     }
 
-    function typeLineText(row){
-      const cap = s => s ? s.split(/[\s,;]+/).filter(Boolean).map(x=>x.trim()).map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ') : '';
-      const sup = cap(row.supersStr);
-      const typ = cap(row.typesStr);
-      const sub = cap(row.subtypesStr);
-      return `${[sup, typ].filter(Boolean).join(' ')}${sub? ' — '+sub : ''}` || '—';
-    }
-
+    // ===== Modal =====
+    function capWords(s){ return s? s.split(/[\s,;]+/).filter(Boolean).map(w=> w[0].toUpperCase()+w.slice(1)).join(' ') : ''; }
+    function typeLineText(row){ const sup=capWords(row.supersStr); const typ=capWords(row.typesStr); const sub=capWords(row.subtypesStr); return `${[sup, typ].filter(Boolean).join(' ')}${sub? ' — '+sub : ''}` || '—'; }
     function showCardModal(row){
-      const name = row.card;
       const isBan = BANNED.has(row.key) || HARD_BANNED.has(row.key);
       const isRes = RESTRICTED.has(row.key) && !isBan;
-      document.getElementById('cardTitle').textContent = name || 'Card';
+      document.getElementById('cardTitle').textContent = row.card || 'Card';
       document.getElementById('typeLine').textContent = typeLineText(row);
       document.getElementById('costSet').textContent = [row.set||'', row.manaCost||''].filter(Boolean).join('  •  ');
       document.getElementById('cardText').textContent = (row.text || '').trim() || '(no rules text in source)';
       document.getElementById('artist').textContent = row.artist? `Artist — ${row.artist}` : 'Artist — ?';
-      // P/T only on (Artifact) Creatures
       const ptEl = document.getElementById('pt');
       const isCreature = row.typesSet && row.typesSet.has('creature');
-      if (isCreature) {
-        ptEl.style.display = '';
-        ptEl.textContent = `${row.power || '—'}/${row.toughness || '—'}`;
-      } else {
-        ptEl.style.display = 'none';
-        ptEl.textContent = '';
-      }
+      if (isCreature) { ptEl.style.display = ''; ptEl.textContent = `${row.power || '—'}/${row.toughness || '—'}`; }
+      else { ptEl.style.display = 'none'; ptEl.textContent = ''; }
       document.getElementById('banInfo').innerHTML = isBan? '<span class="tag banned">BANNED</span>' : (isRes? '<span class="tag restricted">Restricted</span>' : '');
       document.getElementById('cardModal').classList.add('open');
     }
+    function bindRowClicks(){ /* bound after DataTable init */ }
     document.getElementById('modalClose').addEventListener('click', ()=> document.getElementById('cardModal').classList.remove('open'));
     document.getElementById('cardModal').addEventListener('click', (e)=>{ if(e.target.id==='cardModal') e.currentTarget.classList.remove('open'); });
+
+    // ===== Mobile filter count updater =====
+    (function(){
+      const countEl = document.getElementById('filterCount');
+      function computeActiveFilters(){
+        let n = 0;
+        n += document.querySelectorAll('.cf:checked').length;  // colors
+        n += document.querySelectorAll('.tf:checked').length;  // types
+        n += document.querySelectorAll('.sf:checked').length;  // supertypes
+        n += document.querySelectorAll('.rf:checked').length;  // rarities
+        if (document.getElementById('setFilter')?.value) n++;
+        if (document.getElementById('nameSearch')?.value.trim()) n++;
+        const mvMinV = document.getElementById('mvMin')?.value;
+        const mvMaxV = document.getElementById('mvMax')?.value;
+        if (mvMinV !== '' && mvMinV != null) n++;
+        if (mvMaxV !== '' && mvMaxV != null) n++;
+        return n;
+      }
+      window.updateFilterCount = function(){ if (!countEl) return; countEl.textContent = computeActiveFilters(); };
+      const attach = (sel) => { document.querySelectorAll(sel).forEach(el => { el.addEventListener('change', window.updateFilterCount); el.addEventListener('input',  window.updateFilterCount); }); };
+      attach('.cf,.tf,.sf,.rf,#setFilter,#nameSearch,#mvMin,#mvMax');
+      const rarHost = document.getElementById('rarityFilters');
+      if (rarHost && 'MutationObserver' in window) {
+        const mo = new MutationObserver(() => attach('.rf'));
+        mo.observe(rarHost, { childList: true, subtree: true });
+      }
+      document.addEventListener('DOMContentLoaded', window.updateFilterCount);
+      window.updateFilterCount();
+    })();
   </script>
 </body>
 </html>
