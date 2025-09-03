@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,6 +26,12 @@
     .panel { background:var(--card); border-radius:16px; padding:18px; box-shadow:0 6px 20px rgba(0,0,0,.25); margin-bottom:16px; }
 
     .controls { display:grid; gap:12px; grid-template-columns: 1fr; align-items:center; }
+
+    /*
+      MOBILE-FRIENDLY FILTER WRAP TUNING
+      - Let rows wrap (no sideways scroll)
+      - Let each pill wrap internally and grow to full width on small screens
+    */
     .row { display:flex; gap:14px; align-items:center; flex-wrap:wrap; overflow-x:visible; }
     .pill { background:#f2e6c6; border:1px solid #c8a96c; color:var(--ink); padding:8px 12px; border-radius:12px; display:flex; align-items:center; gap:10px; flex:1 1 320px; min-width:260px; flex-wrap:wrap; }
     .pill label { display:inline-flex; align-items:center; gap:6px; margin-right:10px; }
@@ -44,10 +49,6 @@
     input[type="range"]:active::-webkit-slider-thumb { transform:scale(1.05); }
 
     #thresholdNumber { width:90px; background:#fff9e6; color:#2b1a08; border:2px solid #c8a96c; border-radius:8px; padding:6px 8px; font-family:'Book Antiqua', Palatino, serif; box-shadow:inset 0 0 5px #d6b87a; }
-
-    /* Filters drawer button and badge */
-    .filters-toggle { display:none; margin:8px 0; padding:8px 14px; font-size:16px; border:1px solid #c8a96c; border-radius:8px; background:#f2e6c6; cursor:pointer; }
-    .filter-count { display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px; border:1px solid #c8a96c; background:#fff9e6; font-size:13px; }
 
     table.dataTable { background:#fdf6e3; border:2px solid #d6b87a; border-radius:12px; overflow:hidden; }
     table.dataTable thead th { background:#f2e6c6; color:#3a240a; font-weight:bold; border-bottom:2px solid #d6b87a; }
@@ -93,7 +94,6 @@
     .search-input { width:220px; background:#fff9e6; color:#2b1a08; border:1px solid #c8a96c; border-radius:8px; padding:6px 8px; }
     .num-input { width:82px; background:#fff9e6; color:#2b1a08; border:1px solid #c8a96c; border-radius:8px; padding:6px 8px; }
 
-    /* Filters drawer responsive behavior */
     @media (max-width: 640px) {
       body { border-width: 16px; }
       header h1 { font-size: 24px; }
@@ -102,6 +102,7 @@
       .wrap { padding: 0 8px; overflow-x:hidden; }
       .panel { border-radius: 12px; padding: 12px; }
 
+      /* stack the filters, full width pills */
       .row { flex-wrap: wrap; flex-direction: row; gap:10px; overflow-x:visible; }
       .pill { padding: 8px 10px; width:100%; min-width:0; border-radius:12px; }
 
@@ -113,13 +114,8 @@
       table.dataTable tbody td { font-size: 14px; }
 
       .modal-card { max-height: 80vh; overflow:auto; }
-
       .search-input { width: 100%; }
       .actions { width:100%; justify-content:flex-start; }
-
-      .filters-toggle { display:block; width:100%; }
-      .filters-panel { display:none; margin-top:8px; padding:10px; border:1px solid #c8a96c; border-radius:10px; background:#fffdf7; }
-      body.filters-open .filters-panel { display:block; }
     }
   </style>
 </head>
@@ -131,14 +127,7 @@
 
   <div class="wrap">
     <div class="panel">
-      <!-- Mobile toggle -->
-      <button id="filtersToggle" class="filters-toggle"
-              onclick="document.body.classList.toggle('filters-open'); window.updateFilterCount?.();">
-        ☰ Filters <span id="filterCount" class="filter-count">0</span>
-      </button>
-
       <div class="controls">
-        <!-- Always-visible row -->
         <div class="row">
           <div class="pill" title="Set the maximum total appearances to include">
             <span>Threshold ≤ <span id="thresholdLabel" class="kpi">…</span></span>
@@ -164,56 +153,51 @@
             <input id="nameSearch" class="search-input" type="text" placeholder="Card name…"/>
           </div>
         </div>
-
-        <!-- Drawer panel -->
-        <div class="filters-panel">
-          <div class="row">
-            <div class="pill" title="Filter by color in casting cost (select any combination)">
-              <span class="muted">Colors:</span>
-              <label><input type="checkbox" class="cf" data-c="W"> W</label>
-              <label><input type="checkbox" class="cf" data-c="U"> U</label>
-              <label><input type="checkbox" class="cf" data-c="B"> B</label>
-              <label><input type="checkbox" class="cf" data-c="R"> R</label>
-              <label><input type="checkbox" class="cf" data-c="G"> G</label>
-              <label><input type="checkbox" class="cf" data-c="C"> C</label>
-              <span class="muted" style="margin-left:8px">•</span>
-              <label title="Require cards to contain ALL selected colors (instead of ANY)."><input type="checkbox" id="colorModeAll"> Match ALL</label>
-            </div>
-            <div class="pill" title="Filter by card types (any combination)">
-              <span class="muted">Types:</span>
-              <label><input type="checkbox" class="tf" data-t="creature"> Creature</label>
-              <label><input type="checkbox" class="tf" data-t="artifact"> Artifact</label>
-              <label><input type="checkbox" class="tf" data-t="artifact creature"> Artifact Creature</label>
-              <label><input type="checkbox" class="tf" data-t="enchantment"> Enchantment</label>
-              <label><input type="checkbox" class="tf" data-t="instant"> Instant</label>
-              <label><input type="checkbox" class="tf" data-t="sorcery"> Sorcery</label>
-              <label><input type="checkbox" class="tf" data-t="land"> Land</label>
-            </div>
-            <div class="pill" title="Filter by supertypes (any combination)">
-              <span class="muted">Supertypes:</span>
-              <label><input type="checkbox" class="sf" data-s="legendary"> Legendary</label>
-              <label><input type="checkbox" class="sf" data-s="world"> World</label>
-              <label><input type="checkbox" class="sf" data-s="basic"> Basic</label>
-            </div>
+        <div class="row">
+          <div class="pill" title="Filter by color in casting cost (select any combination)">
+            <span class="muted">Colors:</span>
+            <label><input type="checkbox" class="cf" data-c="W"> W</label>
+            <label><input type="checkbox" class="cf" data-c="U"> U</label>
+            <label><input type="checkbox" class="cf" data-c="B"> B</label>
+            <label><input type="checkbox" class="cf" data-c="R"> R</label>
+            <label><input type="checkbox" class="cf" data-c="G"> G</label>
+            <label><input type="checkbox" class="cf" data-c="C"> C</label>
+            <span class="muted" style="margin-left:8px">•</span>
+            <label title="Require cards to contain ALL selected colors (instead of ANY)."><input type="checkbox" id="colorModeAll"> Match ALL</label>
           </div>
-          <div class="row">
-            <div class="pill" title="Filter by rarity">
-              <span class="muted">Rarity:</span>
-              <span id="rarityFilters"></span>
-            </div>
-            <div class="pill" title="Filter by mana value (converted mana cost)">
-              <span class="muted">Mana Value:</span>
-              <label>Min <input id="mvMin" class="num-input" type="number" min="0" step="1" placeholder="0"/></label>
-              <label>Max <input id="mvMax" class="num-input" type="number" min="0" step="1" placeholder=""/></label>
-            </div>
-            <div class="actions">
-              <button id="resetFilters" class="btn" title="Reset all filters to defaults">Reset</button>
-              <button id="exportBtn" class="btn" title="Download CSV view">Export CSV</button>
-              <button id="copyLinkBtn" class="btn" title="Copy a sharable link with your current settings">Copy Link</button>
-            </div>
+          <div class="pill" title="Filter by card types (any combination)">
+            <span class="muted">Types:</span>
+            <label><input type="checkbox" class="tf" data-t="creature"> Creature</label>
+            <label><input type="checkbox" class="tf" data-t="artifact"> Artifact</label>
+            <label><input type="checkbox" class="tf" data-t="artifact creature"> Artifact Creature</label>
+            <label><input type="checkbox" class="tf" data-t="enchantment"> Enchantment</label>
+            <label><input type="checkbox" class="tf" data-t="instant"> Instant</label>
+            <label><input type="checkbox" class="tf" data-t="sorcery"> Sorcery</label>
+            <label><input type="checkbox" class="tf" data-t="land"> Land</label>
+          </div>
+          <div class="pill" title="Filter by supertypes (any combination)">
+            <span class="muted">Supertypes:</span>
+            <label><input type="checkbox" class="sf" data-s="legendary"> Legendary</label>
+            <label><input type="checkbox" class="sf" data-s="world"> World</label>
+            <label><input type="checkbox" class="sf" data-s="basic"> Basic</label>
           </div>
         </div>
-
+        <div class="row">
+          <div class="pill" title="Filter by rarity">
+            <span class="muted">Rarity:</span>
+            <span id="rarityFilters"></span>
+          </div>
+          <div class="pill" title="Filter by mana value (converted mana cost)">
+            <span class="muted">Mana Value:</span>
+            <label>Min <input id="mvMin" class="num-input" type="number" min="0" step="1" placeholder="0"/></label>
+            <label>Max <input id="mvMax" class="num-input" type="number" min="0" step="1" placeholder=""/></label>
+          </div>
+          <div class="actions">
+            <button id="resetFilters" class="btn" title="Reset all filters to defaults">Reset</button>
+            <button id="exportBtn" class="btn" title="Download CSV view">Export CSV</button>
+            <button id="copyLinkBtn" class="btn" title="Copy a sharable link with your current settings">Copy Link</button>
+          </div>
+        </div>
         <div class="muted" id="meta">Loading data…</div>
         <div class="muted" id="topInfo" aria-live="polite"></div>
         <div id="err" style="display:none"></div>
@@ -243,17 +227,7 @@
       <div class="grid">
         <div>
           <label for="deckInput" class="muted">Paste your Tolaria/ManaStack/Moxfield‑style list here (sideboard optional):</label>
-          <textarea id="deckInput" placeholder="e.g. 
-
-3 Sword of the Ages
-1 Sylvan Library
-1 Vaevictis Asmadi
-...            
-
-SIDEBOARD:
-1 Bazaar of Baghdad
-3 Crumble
-..."></textarea>
+          <textarea id="deckInput" placeholder="e.g. \n\n3 Sword of the Ages\n1 Sylvan Library\n1 Vaevictis Asmadi\n...            \n\nSIDEBOARD:\n1 Bazaar of Baghdad\n3 Crumble\n..."></textarea>
           <div class="small" style="margin-top:6px;">
             <input type="file" id="deckFile" accept=".txt,.dek,.dec"/>
             <button id="analyzeBtn" class="btn">Analyze &amp; Validate Deck</button>
@@ -347,12 +321,12 @@ SIDEBOARD:
     function normName(s){
       return String(s||'')
         .normalize('NFKD')
-        .replace(/[\\u2018\\u2019\\u201A\\u201B\\u2032]/g, "'")
-        .replace(/[\\u201C\\u201D\\u201E\\u201F\\u2033]/g, '"')
-        .replace(/[\\u2013\\u2014]/g, '-')
-        .replace(/\\[[^\\]]*\\]/g,'')
-        .replace(/\\([^)]*\\)$/,'')
-        .replace(/\\s+/g,' ')
+        .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")
+        .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"')
+        .replace(/[\u2013\u2014]/g, '-')
+        .replace(/\[[^\]]*\]/g,'')
+        .replace(/\([^)]*\)$/,'')
+        .replace(/\s+/g,' ')
         .trim()
         .toLowerCase()
         .replace(/[^a-z0-9]/g,'');
@@ -364,14 +338,14 @@ SIDEBOARD:
       });
     }
 
-    function typeHas(t, word){ return new RegExp('(?:^|,|\\\\s)'+word+'(?:,|\\\\s|$)', 'i').test(t||''); }
+    function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i').test(t||''); }
     function isLegendaryCard(row){ return String(row.supertypes||'').toLowerCase().includes('legendary'); }
     function isLegendaryCreature(row){ return isLegendaryCard(row) && typeHas(String(row.types),'creature'); }
 
     function parseColorsFromRow(r){
       const out = new Set();
       let cols = r.colors || r.colorIdentity || r.colours || '';
-      if (cols){ String(cols).split(/[\\s,;]+/).forEach(tok=>{ const c = String(tok).trim().toUpperCase(); if(/^[WUBRG]$/.test(c)) out.add(c); }); }
+      if (cols){ String(cols).split(/[\s,;]+/).forEach(tok=>{ const c = String(tok).trim().toUpperCase(); if(/^[WUBRG]$/.test(c)) out.add(c); }); }
       if (!out.size && r.manaCost){ const m = String(r.manaCost); if (/{W}/i.test(m)) out.add('W'); if (/{U}/i.test(m)) out.add('U'); if (/{B}/i.test(m)) out.add('B'); if (/{R}/i.test(m)) out.add('R'); if (/{G}/i.test(m)) out.add('G'); }
       return out;
     }
@@ -403,9 +377,9 @@ SIDEBOARD:
       const headers = Object.keys(rows[0]||{});
       const nameKey  = headers.find(h => /^name$/i.test(h)) || headers[0];
       const setKey   = headers.find(h => /^set$/i.test(h));
-      const mainKey  = headers.find(h => /4hm\\s*main(deck)?/i.test(h)) || '4hmMainDeck';
-      const sideKey  = headers.find(h => /4hm\\s*side(board)?/i.test(h)) || '4hmSideBoard';
-      const totalKey = headers.find(h => /4hm\\s*total/i.test(h)) || '4hmTotal';
+      const mainKey  = headers.find(h => /4hm\s*main(deck)?/i.test(h)) || '4hmMainDeck';
+      const sideKey  = headers.find(h => /4hm\s*side(board)?/i.test(h)) || '4hmSideBoard';
+      const totalKey = headers.find(h => /4hm\s*total/i.test(h)) || '4hmTotal';
       const toNum = v => { const n = Number(String(v||'').replace(/,/g,'')); return isFinite(n) ? n : 0; };
 
       for(const r of rows){
@@ -419,8 +393,8 @@ SIDEBOARD:
         const typesStr = String(r.types||'').toLowerCase();
         const supersStr = String(r.supertypes||'').toLowerCase();
         const subtypesStr = String(r.subtypes||'').toLowerCase();
-        const typesSet = new Set(typesStr.split(/[\\s,;]+/).filter(Boolean));
-        const supersSet = new Set(supersStr.split(/[\\s,;]+/).filter(Boolean));
+        const typesSet = new Set(typesStr.split(/[\s,;]+/).filter(Boolean));
+        const supersSet = new Set(supersStr.split(/[\s,;]+/).filter(Boolean));
         const rarity = String(r.rarity||'').toLowerCase().trim();
         if(rarity) ALL_RARITIES.add(rarity);
         const artist = String(r.artist||'').trim();
@@ -443,7 +417,7 @@ SIDEBOARD:
     function ingestBR(rows){
       if(!rows?.length) return;
       const headers = Object.keys(rows[0]||{});
-      const nameKey = headers.find(h => /^name$/i.test(h) || /card\\s*name/i.test(h) || /^card$/i.test(h)) || headers[0];
+      const nameKey = headers.find(h => /^name$/i.test(h) || /card\s*name/i.test(h) || /^card$/i.test(h)) || headers[0];
       const bannedKey = headers.find(h => /^banned$/i.test(h));
       const restrictedKey = headers.find(h => /^restricted$/i.test(h));
       const truthy = v => { const s = String(v||'').trim().toLowerCase(); return s && s!=='0' && s!=='false' && s!=='no' && s!=='n' && s!=='na'; };
@@ -464,27 +438,28 @@ SIDEBOARD:
       box.min = '0'; box.max = String(Math.max(1,MAX_TOTAL)); box.value = String(initialAbs);
       label.textContent = Number(initialAbs).toLocaleString();
 
-      const syncFromSlider = (sVal) => { const abs = sliderToThreshold(Number(sVal)); box.value = String(abs); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); window.updateFilterCount?.(); };
-      const syncFromBox = (bVal) => { const abs = Math.max(0, Math.min(Number(bVal)||0, Math.max(1,MAX_TOTAL))); slider.value = String(thresholdToSlider(abs)); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); window.updateFilterCount?.(); };
+      const syncFromSlider = (sVal) => { const abs = sliderToThreshold(Number(sVal)); box.value = String(abs); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); };
+      const syncFromBox = (bVal) => { const abs = Math.max(0, Math.min(Number(bVal)||0, Math.max(1,MAX_TOTAL))); slider.value = String(thresholdToSlider(abs)); label.textContent = abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); };
       slider.addEventListener('input', e=>syncFromSlider(e.target.value));
       box.addEventListener('input', e=>syncFromBox(e.target.value));
-      document.querySelectorAll('#quickPresets .btn-mini').forEach(b=> b.addEventListener('click',()=>{ const abs=Math.min(Number(b.dataset.th), Math.max(1,MAX_TOTAL)); box.value=String(abs); slider.value=String(thresholdToSlider(abs)); label.textContent=abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); window.updateFilterCount?.(); }));
+      document.querySelectorAll('#quickPresets .btn-mini').forEach(b=> b.addEventListener('click',()=>{ const abs=Math.min(Number(b.dataset.th), Math.max(1,MAX_TOTAL)); box.value=String(abs); slider.value=String(thresholdToSlider(abs)); label.textContent=abs.toLocaleString(); renderTable(abs, document.getElementById('setFilter').value || ""); updateQuery(abs); }));
 
       populateSetFilter(allRows.map(r => r.set));
       populateRarityFilters();
 
-      document.querySelectorAll('.cf').forEach(cb => { cb.addEventListener('change', () => { const c = cb.dataset.c; if (cb.checked) colorState.add(c); else colorState.delete(c); redraw(); window.updateFilterCount?.(); }); });
+      document.querySelectorAll('.cf').forEach(cb => { cb.addEventListener('change', () => { const c = cb.dataset.c; if (cb.checked) colorState.add(c); else colorState.delete(c); redraw(); }); });
       const modeBox = document.getElementById('colorModeAll');
-      if (modeBox){ modeBox.addEventListener('change', (e)=>{ colorModeAll = !!e.target.checked; redraw(); window.updateFilterCount?.(); }); }
+      if (modeBox){ modeBox.addEventListener('change', (e)=>{ colorModeAll = !!e.target.checked; redraw(); }); }
 
-      document.querySelectorAll('.tf').forEach(cb => { cb.addEventListener('change', () => { const t = cb.dataset.t; if (cb.checked) typeState.add(t); else typeState.delete(t); redraw(); window.updateFilterCount?.(); }); });
-      document.querySelectorAll('.sf').forEach(cb => { cb.addEventListener('change', () => { const s = cb.dataset.s; if (cb.checked) superState.add(s); else superState.delete(s); redraw(); window.updateFilterCount?.(); }); });
+      document.querySelectorAll('.tf').forEach(cb => { cb.addEventListener('change', () => { const t = cb.dataset.t; if (cb.checked) typeState.add(t); else typeState.delete(t); redraw(); }); });
+      document.querySelectorAll('.sf').forEach(cb => { cb.addEventListener('change', () => { const s = cb.dataset.s; if (cb.checked) superState.add(s); else superState.delete(s); redraw(); }); });
 
-      document.getElementById('nameSearch').addEventListener('input', (e)=>{ nameQuery = String(e.target.value||'').trim().toLowerCase(); redraw(); window.updateFilterCount?.(); });
-      document.getElementById('mvMin').addEventListener('input', e=>{ const v = e.target.value; mvMin = v===''? null : Number(v); redraw(); window.updateFilterCount?.(); });
-      document.getElementById('mvMax').addEventListener('input', e=>{ const v = e.target.value; mvMax = v===''? null : Number(v); redraw(); window.updateFilterCount?.(); });
+      document.getElementById('nameSearch').addEventListener('input', (e)=>{ nameQuery = String(e.target.value||'').trim().toLowerCase(); redraw(); });
+      document.getElementById('mvMin').addEventListener('input', e=>{ const v = e.target.value; mvMin = v===''? null : Number(v); redraw(); });
+      document.getElementById('mvMax').addEventListener('input', e=>{ const v = e.target.value; mvMax = v===''? null : Number(v); redraw(); });
 
       document.getElementById('resetFilters').addEventListener('click', ()=>{
+        // Clear UI controls
         document.querySelectorAll('.cf,.tf,.sf,.rf').forEach(cb=>{ cb.checked=false; });
         colorState.clear(); typeState.clear(); superState.clear(); rarityState.clear();
         document.getElementById('nameSearch').value = ''; nameQuery='';
@@ -493,16 +468,12 @@ SIDEBOARD:
         document.getElementById('setFilter').value='';
         const abs = Number(document.getElementById('thresholdNumber').value)||0;
         renderTable(abs, '');
-        window.updateFilterCount?.();
       });
 
       renderTable(initialAbs, params.get('set'));
 
       document.getElementById('exportBtn').addEventListener('click', exportCSV);
       document.getElementById('copyLinkBtn').addEventListener('click', copySharableLink);
-
-      // Live count initial render
-      setTimeout(()=>window.updateFilterCount?.(), 0);
     }
 
     function redraw(){ const abs = Number(document.getElementById('thresholdNumber').value)||0; renderTable(abs, document.getElementById('setFilter').value || ''); }
@@ -512,27 +483,14 @@ SIDEBOARD:
       const uniq = Array.from(new Set(sets)).sort((a,b)=>a.localeCompare(b));
       uniq.forEach(s => { const opt = document.createElement('option'); opt.value = s; opt.textContent = s; sel.appendChild(opt); });
       const qSet = params.get('set'); if(qSet) sel.value = qSet;
-      sel.addEventListener('change', () => { redraw(); updateQuery(Number(document.getElementById('thresholdNumber').value)); window.updateFilterCount?.(); });
+      sel.addEventListener('change', () => { redraw(); updateQuery(Number(document.getElementById('thresholdNumber').value)); });
     }
 
     function populateRarityFilters(){
       const host = document.getElementById('rarityFilters');
       const rars = Array.from(ALL_RARITIES).sort();
-      host.innerHTML = rars.map(r=>`<label><input type="checkbox" class="rf" data-r="${r}"> ${r.charAt(0).toUpperCase()+r.slice(1)}</label>`).join(' ');
-      host.querySelectorAll('.rf').forEach(cb=> cb.addEventListener('change', ()=>{ const r = cb.dataset.r; if(cb.checked) rarityState.add(r); else rarityState.delete(r); redraw(); window.updateFilterCount?.(); }));
-
-      // In case rarities arrive late, observe future changes and attach
-      if ('MutationObserver' in window) {
-        const mo = new MutationObserver(()=>{
-          host.querySelectorAll('.rf').forEach(cb=>{
-            if(!cb._wired){
-              cb.addEventListener('change', ()=>{ const r = cb.dataset.r; if(cb.checked) rarityState.add(r); else rarityState.delete(r); redraw(); window.updateFilterCount?.(); });
-              cb._wired = true;
-            }
-          });
-        });
-        mo.observe(host, { childList: true, subtree: true });
-      }
+      host.innerHTML = rars.map(r=>`<label><input type=\"checkbox\" class=\"rf\" data-r=\"${r}\"> ${r.charAt(0).toUpperCase()+r.slice(1)}</label>`).join(' ');
+      host.querySelectorAll('.rf').forEach(cb=> cb.addEventListener('change', ()=>{ const r = cb.dataset.r; if(cb.checked) rarityState.add(r); else rarityState.delete(r); redraw(); }));
     }
 
     function passesColorFilter(row){
@@ -566,7 +524,7 @@ SIDEBOARD:
         const isBan = BANNED.has(r.key) || HARD_BANNED.has(r.key);
         const isRes = RESTRICTED.has(r.key);
         const tags = `${isBan?'<span class="tag banned">BANNED</span>':''}${(!isBan && isRes)?'<span class="tag restricted">Restricted</span>':''}`;
-        const link = `<a href="#" class="cardlink" data-key="${r.key}">${r.card}</a>${tags}`;
+        const link = `<a href=\"#\" class=\"cardlink\" data-key=\"${r.key}\">${r.card}</a>${tags}`;
         return [r.set, link, r.main, r.side, r.total];
       });
       if(dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); bindRowClicks(); }
@@ -600,7 +558,7 @@ SIDEBOARD:
       const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       const rtag = rarityState.size?`-rarity-${Array.from(rarityState).join('_')}`:'';
-      a.download = `4HM-jank-threshold-${v}${set?`-${set.replace(/\\s+/g,'_')}`:''}${colorState.size?`-colors-${Array.from(colorState).join('')}`:''}${typeState.size?`-types-${Array.from(typeState).map(s=>s.replace(/\\s+/g,'_')).join('+')}`:''}${superState.size?`-supers-${Array.from(superState).join('+')}`:''}${mvMin!=null?`-mvmin-${mvMin}`:''}${mvMax!=null?`-mvmax-${mvMax}`:''}${nameQuery?`-q-${nameQuery.replace(/[^a-z0-9]+/g,'')}`:''}${rtag}.csv`;
+      a.download = `4HM-jank-threshold-${v}${set?`-${set.replace(/\s+/g,'_')}`:''}${colorState.size?`-colors-${Array.from(colorState).join('')}`:''}${typeState.size?`-types-${Array.from(typeState).map(s=>s.replace(/\s+/g,'_')).join('+')}`:''}${superState.size?`-supers-${Array.from(superState).join('+')}`:''}${mvMin!=null?`-mvmin-${mvMin}`:''}${mvMax!=null?`-mvmax-${mvMax}`:''}${nameQuery?`-q-${nameQuery.replace(/[^a-z0-9]+/g,'')}`:''}${rtag}.csv`;
       a.click();
     }
 
@@ -627,15 +585,15 @@ SIDEBOARD:
     }
 
     function parseDeck(text){
-      const lines = text.split(/\\r?\\n/);
+      const lines = text.split(/\r?\n/);
       const main = new Map(); const side = new Map();
       let toSide = false;
       for(let raw of lines){
         const line = raw.trim(); if(!line) continue;
-        if(/^side\\s*board\\s*:?/i.test(line)){ toSide = true; continue; }
-        const m = line.match(/^(\\d+)?\\s*(.+)$/); if(!m) continue;
+        if(/^side\s*board\s*:?/i.test(line)){ toSide = true; continue; }
+        const m = line.match(/^(\d+)?\s*(.+)$/); if(!m) continue;
         const n = m[1] ? parseInt(m[1],10) : 1; let name = m[2];
-        name = name.replace(/\\[[^\\]]+\\]/g,'').replace(/\\([^\\)]*\\)$/,'').trim();
+        name = name.replace(/\[[^\]]+\]/g,'').replace(/\([^\)]*\)$/,'').trim();
         const key = normName(name);
         const bucket = toSide ? side : main; bucket.set(key, (bucket.get(key)||0) + (isFinite(n)?n:1));
       }
@@ -686,7 +644,7 @@ SIDEBOARD:
         <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +25)</div>
         <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>`;
       top.innerHTML = '';
-      for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `${t.name}${badge?`<span class="tag"> ${badge}</span>`:''}`; top.appendChild(li); }
+      for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `${t.name}${badge?`<span class=\"tag\"> ${badge}</span>`:''}`; top.appendChild(li); }
     }
 
     function validateDeck(parsed){
@@ -740,7 +698,7 @@ SIDEBOARD:
     }
 
     function typeLineText(row){
-      const cap = s => s ? s.split(/[\\s,;]+/).filter(Boolean).map(x=>x.trim()).map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ') : '';
+      const cap = s => s ? s.split(/[\s,;]+/).filter(Boolean).map(x=>x.trim()).map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ') : '';
       const sup = cap(row.supersStr);
       const typ = cap(row.typesStr);
       const sub = cap(row.subtypesStr);
@@ -771,44 +729,6 @@ SIDEBOARD:
     }
     document.getElementById('modalClose').addEventListener('click', ()=> document.getElementById('cardModal').classList.remove('open'));
     document.getElementById('cardModal').addEventListener('click', (e)=>{ if(e.target.id==='cardModal') e.currentTarget.classList.remove('open'); });
-
-    // --- Active filter count (for mobile button) ---
-    (function(){
-      const countEl = document.getElementById('filterCount');
-      function computeActiveFilters(){
-        let n = 0;
-        n += document.querySelectorAll('.cf:checked').length;
-        n += document.querySelectorAll('.tf:checked').length;
-        n += document.querySelectorAll('.sf:checked').length;
-        n += document.querySelectorAll('.rf:checked').length;
-        if (document.getElementById('setFilter')?.value) n++;
-        if (document.getElementById('nameSearch')?.value.trim()) n++;
-        const mvMinVal = document.getElementById('mvMin')?.value;
-        const mvMaxVal = document.getElementById('mvMax')?.value;
-        if (mvMinVal !== '' && mvMinVal != null) n++;
-        if (mvMaxVal !== '' && mvMaxVal != null) n++;
-        return n;
-      }
-      window.updateFilterCount = function(){
-        if (!countEl) return;
-        countEl.textContent = computeActiveFilters();
-      };
-      const attach = (sel) => {
-        document.querySelectorAll(sel).forEach(el => {
-          el.addEventListener('change', window.updateFilterCount);
-          el.addEventListener('input',  window.updateFilterCount);
-        });
-      };
-      attach('.cf,.tf,.sf,.rf,#setFilter,#nameSearch,#mvMin,#mvMax');
-      // Observer for rarity checkboxes if injected later
-      const rarHost = document.getElementById('rarityFilters');
-      if (rarHost && 'MutationObserver' in window) {
-        const mo = new MutationObserver(() => attach('.rf'));
-        mo.observe(rarHost, { childList: true, subtree: true });
-      }
-      document.addEventListener('DOMContentLoaded', window.updateFilterCount);
-      window.updateFilterCount();
-    })();
   </script>
 </body>
 </html>
