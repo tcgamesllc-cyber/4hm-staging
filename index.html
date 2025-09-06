@@ -28,7 +28,7 @@
 
     .controls { display:flex; flex-direction:column; gap:10px; }
     .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-    .pill { background:#fff9e6; border:1px solid #c8a96c; border-radius:999px; padding:10px 12px; display:flex; align-items:center; gap:8px; }
+    .pill { background:#fff9e6; border:1px solid #c8a96c; border-radius:999px; padding:10px 12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 
     input[type="range"] { -webkit-appearance:none !important; appearance:none !important; width:260px; height:10px; border-radius:5px; background:linear-gradient(to right, #d6b87a, #b38b4d); outline:none; margin:0 8px; cursor:pointer; border:1px solid #8b5a2b; box-shadow:inset 0 0 4px rgba(0,0,0,.4); }
     input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none !important; appearance:none !important; width:20px; height:20px; border-radius:50%; background:radial-gradient(circle at 30% 30%, #d6b87a, #8b5a2b); border:2px solid #5c3b16; box-shadow:inset 0 0 6px #d6b87a, 0 0 2px #000; cursor:pointer; transition:transform .05s ease-in-out; }
@@ -38,6 +38,9 @@
 
     .btn { background:#fff9e6; border:1px solid #c8a96c; border-radius:10px; padding:6px 10px; cursor:pointer; }
     .btn-mini { padding:4px 8px; font-size:13px; }
+
+    /* ensure action buttons wrap nicely on small screens */
+    .actions { display:flex; flex-wrap:wrap; gap:6px; }
 
     table.dataTable { background:#fdf6e3; border:2px solid #d6b87a; border-radius:12px; overflow:hidden; }
     table.dataTable thead th { background:#f2e6c6; color:#3a240a; font-weight:bold; border-bottom:2px solid #d6b87a; }
@@ -76,6 +79,21 @@
     .num-input { width:82px; background:#fff9e6; color:#2b1a08; border:1px solid #c8a96c; border-radius:8px; padding:6px 8px; }
 
     @media (max-width: 640px) {
+      /* Make filter pills stack and wrap internally */
+      .controls { gap: 8px; }
+      .row { flex-direction: column; gap: 8px; max-width:100%; }
+      .pill { width:100%; min-width:0; flex-wrap:wrap; }
+      .pill label { margin-right:8px; }
+      /* Quick presets wrap */
+      #quickPresets { width:100%; display:flex; flex-wrap:wrap; }
+      #quickPresets .btn-mini { margin:2px 4px; flex:1 1 64px; }
+      /* Inputs/selects go full width when needed */
+      .pill select, .pill input[type="text"], .pill input[type="number"] { width:100%; }
+      #setFilter { width:100%; }
+      #nameSearch { width:100%; }
+      /* Slider and number stack nicely */
+      #threshold { width:100%; flex:1 1 100%; min-width:160px; }
+      #thresholdNumber { flex:1 1 80px; }
       body { border-width: 16px; }
       header h1 { font-size: 24px; }
       header .sub { font-size: 13px; }
