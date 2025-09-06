@@ -42,7 +42,8 @@
     /* ensure action buttons wrap nicely on small screens */
     .actions { display:flex; flex-wrap:wrap; gap:6px; }
     /* Mobile filter hamburger and collapse animation */
-    .filters-bar { display:none; align-items:center; justify-content:space-between; }
+    .filters-bar { display:none; align-items:center; justify-content:space-between; margin-top:8px; }
+    .sticky-controls { margin-bottom:8px; }
     #filters { max-height:2000px; overflow:hidden; transition:max-height .25s ease; }
     #filters.collapsed { max-height:0; padding-top:0; padding-bottom:0; margin-top:0; }
     @media (max-width:640px){ .filters-bar { display:flex; } }
@@ -149,12 +150,7 @@
 
   <div class="wrap">
     <div class="panel">
-      <div class="filters-bar">
-        <button id="filtersToggleBtn" class="btn" aria-expanded="true" aria-controls="filters" aria-label="Toggle filters">
-          ☰ <span id="filtersToggleLabel">Hide filters</span> <span id="filtersCount" class="small" style="margin-left:6px;"></span>
-        </button>
-      </div>
-      <div id="filters" class="controls">
+      <div class="sticky-controls controls">
         <div class="row">
           <div class="pill" title="Set the maximum total appearances to include">
             <span>Threshold ≤ <span id="thresholdLabel" class="kpi">…</span></span>
@@ -170,6 +166,15 @@
             <button class="btn btn-mini" data-th="20">≤20</button>
             <button class="btn btn-mini" data-th="25">≤25</button>
           </div>
+        </div>
+      </div>
+      <div class="filters-bar">
+        <button id="filtersToggleBtn" class="btn" aria-expanded="true" aria-controls="filters" aria-label="Toggle filters">
+          ☰ <span id="filtersToggleLabel">Hide filters</span> <span id="filtersCount" class="small" style="margin-left:6px;"></span>
+        </button>
+      </div>
+      <div id="filters" class="controls">
+        <div class="row">
           <div class="pill" title="Filter by set">
             <label for="setFilter" class="muted">Set:</label>
             <select id="setFilter" style="background:#fff9e6; color:#2b1a08; border:1px solid #c8a96c; border-radius:8px; padding:6px 8px;">
@@ -525,8 +530,6 @@ SIDEBOARD:
         if (nameQuery) c++;
         const setVal = (document.getElementById('setFilter')?.value)||'';
         if (setVal) c++;
-        const thAbs = Number(document.getElementById('thresholdNumber')?.value)||0;
-        if (thAbs !== 4) c++;
         return c;
       }
       function renderCount(){
