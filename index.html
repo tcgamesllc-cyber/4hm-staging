@@ -41,8 +41,13 @@
 
     /* ensure action buttons wrap nicely on small screens */
     .actions { display:flex; flex-wrap:wrap; gap:6px; }
+    /* Mobile filter hamburger and collapse animation */
+    .filters-bar { display:none; align-items:center; justify-content:space-between; }
+    #filters { max-height:2000px; overflow:hidden; transition:max-height .25s ease; }
+    #filters.collapsed { max-height:0; padding-top:0; padding-bottom:0; margin-top:0; }
+    @media (max-width:640px){ .filters-bar { display:flex; } }
 
-    table.dataTable { background:#fdf6e3; border:2px solid #d6b87a; border-radius:12px; overflow:hidden; }
+    table.dataTable {  background:#fdf6e3; border:2px solid #d6b87a; border-radius:12px; overflow:hidden; }
     table.dataTable thead th { background:#f2e6c6; color:#3a240a; font-weight:bold; border-bottom:2px solid #d6b87a; }
     table.dataTable tbody tr:nth-child(even) { background:#fbf2de; }
     table.dataTable tbody tr:nth-child(odd)  { background:#f6ebd2; }
@@ -144,7 +149,12 @@
 
   <div class="wrap">
     <div class="panel">
-      <div class="controls">
+      <div class="filters-bar">
+        <button id="filtersToggleBtn" class="btn" aria-expanded="true" aria-controls="filters" aria-label="Toggle filters">
+          ☰ <span id="filtersToggleLabel">Hide filters</span> <span id="filtersCount" class="small" style="margin-left:6px;"></span>
+        </button>
+      </div>
+      <div id="filters" class="controls">
         <div class="row">
           <div class="pill" title="Set the maximum total appearances to include">
             <span>Threshold ≤ <span id="thresholdLabel" class="kpi">…</span></span>
@@ -491,6 +501,51 @@ SIDEBOARD:
 
       document.getElementById('exportBtn').addEventListener('click', exportCSV);
       document.getElementById('copyLinkBtn').addEventListener('click', copySharableLink);
+      initFilterToggle();
+    }
+    function initFilterToggle(){
+      const btn = document.getElementById('filtersToggleBtn');
+      const filters = document.getElementById('filters');
+      const label = document.getElementById('filtersToggleLabel');
+      const countEl = document.getElementById('filtersCount');
+      if(!btn || !filters) return;
+      const lsKey = 'filtersOpen';
+      const isMobile = () => window.matchMedia('(max-width: 640px)').matches;
+      function setOpen(open){
+        if(open){ filters.classList.remove('collapsed'); btn.setAttribute('aria-expanded','true'); label.textContent='Hide filters'; }
+        else { filters.classList.add('collapsed'); btn.setAttribute('aria-expanded','false'); label.textContent='Show filters'; }
+        try{ localStorage.setItem(lsKey, open ? '1' : '0'); }catch(e){}
+      }
+      function getSaved(){ try{ return localStorage.getItem(lsKey)==='1'; }catch(e){ return false; } }
+      function activeCount(){
+        let c = 0;
+        c += colorState.size + typeState.size + superState.size + rarityState.size;
+        if (mvMin!=null) c++;
+        if (mvMax!=null) c++;
+        if (nameQuery) c++;
+        const setVal = (document.getElementById('setFilter')?.value)||'';
+        if (setVal) c++;
+        const thAbs = Number(document.getElementById('thresholdNumber')?.value)||0;
+        if (thAbs !== 4) c++;
+        return c;
+      }
+      function renderCount(){
+        const n = activeCount();
+        countEl.textContent = n ? `(${n})` : '';
+      }
+      if (isMobile()) { setOpen(getSaved()); }
+      else { setOpen(true); }
+      btn.addEventListener('click', () => {
+        const open = btn.getAttribute('aria-expanded') === 'true';
+        setOpen(!open);
+      });
+      window.addEventListener('resize', () => {
+        if (!isMobile()) setOpen(true);
+        else setOpen(getSaved());
+      });
+      const container = document.getElementById('filters');
+      ['input','change'].forEach(evt => container.addEventListener(evt, renderCount));
+      renderCount();
     }
 
     function redraw(){ const abs = Number(document.getElementById('thresholdNumber').value)||0; renderTable(abs, document.getElementById('setFilter').value || ''); }
