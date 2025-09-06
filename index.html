@@ -490,7 +490,7 @@ SIDEBOARD:
 
     function renderTable(threshold, setFilter){
       const rows = allRows.filter(r => r.total <= threshold && (!setFilter || r.set === setFilter) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
-      rows.forEach(r => { r.jankValue = Number((jankWeight(r.total)/60).toFixed(2)); });
+      rows.forEach(r => { r.jankValue = BASIC_SET.has(r.key) ? 0 : Number((jankWeight(r.total)/60).toFixed(2)); });
       const data = rows.map(r => {
         const isBan = BANNED.has(r.key) || HARD_BANNED.has(r.key);
         const isRes = RESTRICTED.has(r.key);
@@ -526,7 +526,7 @@ SIDEBOARD:
       const set = document.getElementById('setFilter').value || '';
       const rows = allRows.filter(r => r.total <= v && (!set || r.set === set) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
       const header = ['Set','Card','Main Deck','Sideboard','Total','Jank Pts (per copy)'];
-      const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total, (jankWeight(r.total)/60).toFixed(2)].join(',')));
+      const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total, BASIC_SET.has(r.key) ? '0' : (jankWeight(r.total)/60).toFixed(2)].join(',')));
       const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       const rtag = rarityState.size?`-rarity-${Array.from(rarityState).join('_')}`:'';
@@ -568,7 +568,7 @@ SIDEBOARD:
       for(let raw of lines){
         const line = raw.trim(); if(!line) continue;
         if(/^side\s*board\s*:?/i.test(line)){ toSide = true; continue; }
-        if(/^main\s*board\s*:?/i.test(line)){ toSide = false; continue; } // NEW: ignore explicit "Mainboard" headers
+        if(/^main\s*board\s*:?/i.test(line)){ toSide = false; continue; } // ignore explicit "Mainboard" headers
         const m = line.match(/^(\d+)?\s*(.+)$/); if(!m) continue;
         const n = m[1] ? parseInt(m[1],10) : 1; let name = m[2];
         name = name.replace(/\[[^\]]+\]/g,'').replace(/\([^\)]*\)$/,'').trim();
@@ -591,17 +591,17 @@ SIDEBOARD:
       for(const item of mainArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Main: ${item.count} × ${item.key}`); continue; } matchedMain.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
       for(const item of sideArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Side: ${item.count} × ${item.key}`); continue; } matchedSide.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
 
-      // Jank score
+      // Jank score (basic lands contribute 0)
       const logMax = Math.log(Math.max(1,MAX_TOTAL) + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
-      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; raw += m.count * weight(m.total); }
-      let rawSide = 0; if (includeSide){ for (const s of matchedSide){ rawSide += s.count * weight(s.total); } }
+      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; const w = BASIC_SET.has(m.key) ? 0 : weight(m.total); raw += m.count * w; }
+      let rawSide = 0; if (includeSide){ for (const s of matchedSide){ const w = BASIC_SET.has(s.key) ? 0 : weight(s.total); rawSide += s.count * w; } }
       const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
       const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
       const rawMax = 60 * 100; const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
       const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1)); const finalScore = Math.max(0, Math.min(100, baseScore + bonus));
 
-      // Top jankiest (by per‑copy weight)
-      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
+      // Top jankiest (by per‑copy weight), basics = 0
+      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: BASIC_SET.has(x.key) ? 0 : weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
 
       // Tier counts
       const seen = new Set(); let ultra=0, deep=0, med=0, light=0, ultralight=0;
@@ -632,7 +632,7 @@ SIDEBOARD:
         <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +25)</div>
         <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>`;
       top.innerHTML = '';
-      for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `<a href="#" class="cardlink" data-key="${t.key}">${t.name}</a>${badge?`<span class="tag"> ${badge}</span>`:''} <span class="small mono">(${(t.w/60).toFixed(2)} pts/copy)</span>`; top.appendChild(li); }
+      for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `<a href="#" class="cardlink" data-key="${t.key}">${t.name}</a>${badge?`<span class=\"tag\"> ${badge}</span>`:''} <span class=\"small mono\">(${(t.w/60).toFixed(2)} pts/copy)</span>`; top.appendChild(li); }
     }
 
     function validateDeck(parsed){
@@ -679,10 +679,10 @@ SIDEBOARD:
       const list = document.getElementById('valErrors');
       const counts = document.getElementById('valCounts');
       list.innerHTML = '';
-      if (res.ok){ status.innerHTML = `<span class="valid">✅ Deck is legal for 4HM under current rules.</span>`; }
-      else { status.innerHTML = `<span class="invalid">⛔ Deck is NOT legal — see issues below.</span>`; }
+      if (res.ok){ status.innerHTML = `<span class=\"valid\">✅ Deck is legal for 4HM under current rules.</span>`; }
+      else { status.innerHTML = `<span class=\"invalid\">⛔ Deck is NOT legal — see issues below.</span>`; }
       for(const e of res.errors){ const li = document.createElement('li'); li.textContent = e; list.appendChild(li); }
-      counts.innerHTML = `<span class="tag">Main: ${res.mainCount}</span><span class="tag">Side: ${res.sideCount}</span><span class="tag">leg6 unique: ${res.leg6Distinct}/2</span><span class="tag">leg5 unique: ${res.leg5Distinct}/1</span>`;
+      counts.innerHTML = `<span class=\"tag\">Main: ${res.mainCount}</span><span class=\"tag\">Side: ${res.sideCount}</span><span class=\"tag\">leg6 unique: ${res.leg6Distinct}/2</span><span class=\"tag\">leg5 unique: ${res.leg5Distinct}/1</span>`;
     }
 
     function bindDeckTools(){
