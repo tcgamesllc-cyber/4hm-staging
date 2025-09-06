@@ -103,7 +103,7 @@
 <body>
   <header>
     <h1>⚡ 4HM Jank‑O‑Meter ⚡</h1>
-    <div class="sub">Filter rarely‑played cards, score your deck’s Jank, and validate 4HM legality with the current rules.</div>
+    <div class="sub">Filter rarely‑played cards, score your deck’s Jank, add a Salty score, and validate 4HM legality with the current rules.</div>
   </header>
 
   <div class="wrap">
@@ -112,7 +112,7 @@
       <ul class="small">
         <li><b>Filters:</b> Narrow cards by set, color, type, rarity, mana value, and/or jank threshold.
           (The threshold value represents the maximum number of times a card has appeared in all decks in all prior 4HM tournaments as of T22.)</li>
-        <li><b>Deck Scoring:</b> Paste your deck to get a <i>Jank Score</i>. Click cards anywhere (table or lists) to open the details modal.</li>
+        <li><b>Deck Scoring:</b> Paste your deck to get a <i>Jank Score</i> and a new <i>Salty Score</i>. Click cards anywhere (table or lists) to open the details modal.</li>
       </ul>
       <h3 style="margin-top:12px;">📚 Learn More & Community</h3>
       <p>Four Horsemen (4HM) is a unique Old School Magic format using only cards from <b>Arabian Nights, Antiquities, Legends, The Dark</b>, the five basic lands, and ABUR duals. It’s an unsolved format where forgotten cards and wild brews shine.</p>
@@ -215,7 +215,7 @@
               <th>Main Deck</th>
               <th>Sideboard</th>
               <th>Total</th>
-              <th>Jank Pts (per copy)</th>
+              <th>Jank Value</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -225,7 +225,7 @@
     </div>
 
     <div class="panel" id="scorePanel">
-      <h2 style="margin:0 0 10px 0; color:#3a240a;">🧪 Jank Score + ✅ Deck Validator</h2>
+      <h2 style="margin:0 0 10px 0; color:#3a240a;">🧪 Jank & 🧂 Salty Scores + ✅ Deck Validator</h2>
       <div class="grid">
         <div>
           <label for="deckInput" class="muted">Paste your Tolaria/ManaStack/Moxfield‑style list here (sideboard optional):</label>
@@ -252,6 +252,11 @@ SIDEBOARD:
             <div id="scoreFlavor" class="small">Paste a deck to score it.</div>
           </div>
           <div class="score-badge" style="min-width:260px;">
+            <div><b>Salty Score</b> <span id="saltScoreValue" class="kpi">—</span>/100</div>
+            <div class="meter" aria-hidden="true"><div id="saltBar"></div></div>
+            <div id="saltFlavor" class="small">Higher means spicier salt. Based on EDHREC saltiness for each card.</div>
+          </div>
+          <div class="score-badge" style="min-width:260px;">
             <div><b>Badges</b></div>
             <div id="badges" class="small">—</div>
             <p class="small" style="margin:6px 0 0 0;">The Jank score rewards decks that run oddball, rarely‑seen cards and penalizes heavy reliance on common staples. Extra credit is given when a high percentage of the deck is made up of these unusual picks. <i>In short: the rarer and denser the jank, the higher the score.</i></p>
@@ -260,6 +265,10 @@ SIDEBOARD:
         <div class="score-badge" style="flex:1;">
           <div><b>Top 10 Jankiest in Deck</b></div>
           <ol id="topJank" class="list"></ol>
+        </div>
+        <div class="score-badge" style="flex:1;">
+          <div><b>Top 10 Saltiest in Deck</b></div>
+          <ol id="topSalt" class="list"></ol>
         </div>
         <div class="score-badge" style="flex:1;">
           <div><b>Deck Validator Results</b></div>
@@ -311,6 +320,7 @@ SIDEBOARD:
     let allRows = [];            // table rows (enriched)
     let dataTable = null;        // DataTables instance
     let MAX_TOTAL = 1;           // max 4hmTotal observed (>=1)
+    let SALT_MAX = 0;            // max edhrecSaltiness observed
 
     let LEGAL_CARDS = new Map(); // key -> raw row
     let NAME_MAP = new Map();    // key -> display name
@@ -403,7 +413,7 @@ SIDEBOARD:
         const artist = String(r.artist||'').trim();
         const power = (r.power!=null? String(r.power).trim(): '');
         const toughness = (r.toughness!=null? String(r.toughness).trim(): '');
-        const salt = Number(r[saltKey]||0);
+        const salt = Number(r[saltKey]||0); if (salt > SALT_MAX) SALT_MAX = salt;
 
         NAME_MAP.set(key, String(rawName));
         const raw = { ...r, key, card:String(rawName), set, main, side, total:tot, manaCost, manaValue:mv, types:typesStr, supertypes:supersStr, subtypes:subtypesStr, rarity, artist, power, toughness, edhrecSaltiness:salt };
@@ -490,7 +500,7 @@ SIDEBOARD:
 
     function renderTable(threshold, setFilter){
       const rows = allRows.filter(r => r.total <= threshold && (!setFilter || r.set === setFilter) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
-      rows.forEach(r => { r.jankValue = BASIC_SET.has(r.key) ? 0 : Number((jankWeight(r.total)/60).toFixed(2)); });
+      rows.forEach(r => { r.jankValue = jankWeight(r.total); });
       const data = rows.map(r => {
         const isBan = BANNED.has(r.key) || HARD_BANNED.has(r.key);
         const isRes = RESTRICTED.has(r.key);
@@ -500,7 +510,7 @@ SIDEBOARD:
       });
       if(dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); bindRowClicks(); }
       else {
-        dataTable = jQuery('#jankTable').DataTable({ data, columns: [ { title: 'Set' }, { title: 'Card' }, { title: 'Main Deck' }, { title: 'Sideboard' }, { title: 'Total' }, { title: 'Jank Pts (per copy)' } ], order: [[4, 'desc'], [0, 'asc'], [1, 'asc']], pageLength: 25, deferRender: true, dom: 'tip', createdRow: function(row, data){ /* keep */ } });
+        dataTable = jQuery('#jankTable').DataTable({ data, columns: [ { title: 'Set' }, { title: 'Card' }, { title: 'Main Deck' }, { title: 'Sideboard' }, { title: 'Total' }, { title: 'Jank Value' } ], order: [[4, 'desc'], [0, 'asc'], [1, 'asc']], pageLength: 25, deferRender: true, dom: 'tip', createdRow: function(row, data){ /* keep */ } });
         const topInfo = document.getElementById('topInfo');
         if(topInfo){ dataTable.on('draw', function(){ const info = dataTable.page.info(); topInfo.textContent = `Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`; }); dataTable.draw(); }
         const meta = document.getElementById('meta');
@@ -525,8 +535,8 @@ SIDEBOARD:
       const v = Number(document.getElementById('thresholdNumber').value);
       const set = document.getElementById('setFilter').value || '';
       const rows = allRows.filter(r => r.total <= v && (!set || r.set === set) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
-      const header = ['Set','Card','Main Deck','Sideboard','Total','Jank Pts (per copy)'];
-      const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total, BASIC_SET.has(r.key) ? '0' : (jankWeight(r.total)/60).toFixed(2)].join(',')));
+      const header = ['Set','Card','Main Deck','Sideboard','Total','Jank Value'];
+      const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total, jankWeight(r.total)].join(',')));
       const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       const rtag = rarityState.size?`-rarity-${Array.from(rarityState).join('_')}`:'';
@@ -568,7 +578,7 @@ SIDEBOARD:
       for(let raw of lines){
         const line = raw.trim(); if(!line) continue;
         if(/^side\s*board\s*:?/i.test(line)){ toSide = true; continue; }
-        if(/^main\s*board\s*:?/i.test(line)){ toSide = false; continue; } // ignore explicit "Mainboard" headers
+        if(/^main\s*board\s*:?/i.test(line)){ toSide = false; continue; } // NEW: ignore explicit "Mainboard" headers
         const m = line.match(/^(\d+)?\s*(.+)$/); if(!m) continue;
         const n = m[1] ? parseInt(m[1],10) : 1; let name = m[2];
         name = name.replace(/\[[^\]]+\]/g,'').replace(/\([^\)]*\)$/,'').trim();
@@ -588,26 +598,32 @@ SIDEBOARD:
       const mainArr = mapToArr(parsed.main); const sideArr = mapToArr(parsed.side);
 
       const matchedMain = []; const matchedSide = []; const unmatched = [];
-      for(const item of mainArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Main: ${item.count} × ${item.key}`); continue; } matchedMain.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
-      for(const item of sideArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Side: ${item.count} × ${item.key}`); continue; } matchedSide.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
+      for(const item of mainArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Main: ${item.count} × ${item.key}`); continue; } matchedMain.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count, salt: Number(row.edhrecSaltiness)||0 }); }
+      for(const item of sideArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Side: ${item.count} × ${item.key}`); continue; } matchedSide.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count, salt: Number(row.edhrecSaltiness)||0 }); }
 
-      // Jank score (basic lands contribute 0)
+      // Jank score
       const logMax = Math.log(Math.max(1,MAX_TOTAL) + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
-      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; const w = BASIC_SET.has(m.key) ? 0 : weight(m.total); raw += m.count * w; }
-      let rawSide = 0; if (includeSide){ for (const s of matchedSide){ const w = BASIC_SET.has(s.key) ? 0 : weight(s.total); rawSide += s.count * w; } }
+      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; raw += m.count * weight(m.total); }
+      let rawSide = 0; if (includeSide){ for (const s of matchedSide){ rawSide += s.count * weight(s.total); } }
       const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
       const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
       const rawMax = 60 * 100; const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
-      const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1)); const finalScore = Math.max(0, Math.min(100, baseScore + bonus));
+      const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1)); const over60 = Math.max(0, copiesMain - 60); const over60Bonus = over60 * 0.25; const finalScore = Math.max(0, Math.min(100, baseScore + bonus + over60Bonus));
 
-      // Top jankiest (by per‑copy weight), basics = 0
-      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: BASIC_SET.has(x.key) ? 0 : weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
+      // Top jankiest (by per‑copy weight)
+      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
 
       // Tier counts
       const seen = new Set(); let ultra=0, deep=0, med=0, light=0, ultralight=0;
       for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_ULTRA) ultra++; else if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; else if(t<=THRESH_ULTRALIGHT) ultralight++; }
 
-      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light,ultralight}, copiesMain };
+      // Salt score
+      const saltMaxPerDeck = 60 * Math.max(1, SALT_MAX);
+      let saltSum = 0; for (const m of matchedMain){ saltSum += (m.salt||0) * m.count; } if(includeSide){ for(const s of matchedSide){ saltSum += (s.salt||0) * s.count; } }
+      const saltScore = Math.max(0, Math.min(100, Math.round(100 * (saltSum / saltMaxPerDeck))));
+      const saltTop = [...matchedMain].map(x => ({key:x.key, name:x.official, s: x.salt||0, sTotal: (x.salt||0) * x.count, count:x.count})).sort((a,b)=> b.sTotal - a.sTotal || b.s - a.s).slice(0,10);
+
+      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light,ultralight}, copiesMain, over60, over60Bonus, saltScore, saltTop };
     }
 
     function renderDeckScore(r){
@@ -630,9 +646,17 @@ SIDEBOARD:
         <div>🧊 <b>Ultralight‑jank (≤25 Total):</b> ${r.tierCounts.ultralight}</div>
         <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div>
         <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +25)</div>
-        <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>`;
+        <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>
+        <div>📦 <b>Cards above 60:</b> ${r.over60} (+${r.over60Bonus.toFixed(2)})</div>`;
       top.innerHTML = '';
-      for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `<a href="#" class="cardlink" data-key="${t.key}">${t.name}</a>${badge?`<span class=\"tag\"> ${badge}</span>`:''} <span class=\"small mono\">(${(t.w/60).toFixed(2)} pts/copy)</span>`; top.appendChild(li); }
+      for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `<a href="#" class="cardlink" data-key="${t.key}">${t.name}</a>${badge?`<span class="tag"> ${badge}</span>`:''} <span class="small mono">(${Math.round(t.w)} pts)</span>`; top.appendChild(li); }
+
+      // Salt score
+      const saltEl = document.getElementById('saltScoreValue'); const saltBar = document.getElementById('saltBar'); const saltFlavor = document.getElementById('saltFlavor'); const topSalt = document.getElementById('topSalt');
+      saltEl.textContent = r.saltScore; saltBar.style.width = r.saltScore + '%';
+      saltFlavor.textContent = r.saltScore >= 66 ? '🧂🧂🧂 People will feel this.' : (r.saltScore >= 33 ? '🧂🧂 Noticeable sting.' : '🧂 Mild sprinkle.');
+      topSalt.innerHTML = '';
+      for (const s of r.saltTop){ const li = document.createElement('li'); li.innerHTML = `<a href="#" class="cardlink" data-key="${s.key}">${s.name}</a> <span class="small mono">(${s.s.toFixed(2)} salt × ${s.count} = ${s.sTotal.toFixed(2)})</span>`; topSalt.appendChild(li); }
     }
 
     function validateDeck(parsed){
@@ -679,10 +703,10 @@ SIDEBOARD:
       const list = document.getElementById('valErrors');
       const counts = document.getElementById('valCounts');
       list.innerHTML = '';
-      if (res.ok){ status.innerHTML = `<span class=\"valid\">✅ Deck is legal for 4HM under current rules.</span>`; }
-      else { status.innerHTML = `<span class=\"invalid\">⛔ Deck is NOT legal — see issues below.</span>`; }
+      if (res.ok){ status.innerHTML = `<span class="valid">✅ Deck is legal for 4HM under current rules.</span>`; }
+      else { status.innerHTML = `<span class="invalid">⛔ Deck is NOT legal — see issues below.</span>`; }
       for(const e of res.errors){ const li = document.createElement('li'); li.textContent = e; list.appendChild(li); }
-      counts.innerHTML = `<span class=\"tag\">Main: ${res.mainCount}</span><span class=\"tag\">Side: ${res.sideCount}</span><span class=\"tag\">leg6 unique: ${res.leg6Distinct}/2</span><span class=\"tag\">leg5 unique: ${res.leg5Distinct}/1</span>`;
+      counts.innerHTML = `<span class="tag">Main: ${res.mainCount}</span><span class="tag">Side: ${res.sideCount}</span><span class="tag">leg6 unique: ${res.leg6Distinct}/2</span><span class="tag">leg5 unique: ${res.leg5Distinct}/1</span>`;
     }
 
     function bindDeckTools(){
