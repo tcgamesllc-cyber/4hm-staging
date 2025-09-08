@@ -567,7 +567,7 @@ SIDEBOARD:
 
     function renderTable(threshold, setFilter){
       const rows = allRows.filter(r => r.total <= threshold && (!setFilter || r.set === setFilter) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
-      rows.forEach(r => { r.jankValue = (BASIC_SET.has(r.key) || DUELS_SET.has(r.key)) ? 0 : Number((jankWeight(r.total)/60).toFixed(2)); });
+      rows.forEach(r => { r.jankValue = (BASIC_SET.has(r.key) || (typeof DUELS_SET!=='undefined' && DUELS_SET.has(r.key)) ? 0 : Number((jankWeight(r.total)/60).toFixed(2)); });
       const data = rows.map(r => {
         const isBan = BANNED.has(r.key) || HARD_BANNED.has(r.key);
         const isRes = RESTRICTED.has(r.key);
@@ -630,7 +630,7 @@ SIDEBOARD:
       const set = document.getElementById('setFilter').value || '';
       const rows = allRows.filter(r => r.total <= v && (!set || r.set === set) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
       const header = ['Set','Card','Main Deck','Sideboard','Total','Jank Pts (per copy)'];
-      const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total, (BASIC_SET.has(r.key) || DUELS_SET.has(r.key)) ? '0' : (jankWeight(r.total)/60).toFixed(2)].join(',')));
+      const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total, (BASIC_SET.has(r.key) || (typeof DUELS_SET!=='undefined' && DUELS_SET.has(r.key)) ? '0' : (jankWeight(r.total)/60).toFixed(2)].join(',')));
       const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       const rtag = rarityState.size?`-rarity-${Array.from(rarityState).join('_')}`:'';
@@ -697,7 +697,7 @@ SIDEBOARD:
 
       // Jank score (basic lands contribute 0)
       const logMax = Math.log(Math.max(1,MAX_TOTAL) + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
-      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; const w = (BASIC_SET.has(m.key) || DUELS_SET.has(m.key)) ? 0 : weight(m.total); raw += m.count * w; }
+      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; const w = (BASIC_SET.has(m.key) || (typeof DUELS_SET!=='undefined' && DUELS_SET.has(m.key)) ? 0 : weight(m.total); raw += m.count * w; }
       let rawSide = 0; if (includeSide){ for (const s of matchedSide){ const w = BASIC_SET.has(s.key) ? 0 : weight(s.total); rawSide += s.count * w; } }
       const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
       const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
@@ -724,7 +724,7 @@ SIDEBOARD:
       const finalScore = Math.max(0, Math.min(100, adjustedBase + bonus + over60Bonus));
 
       // Top jankiest (by per‑copy weight), basics = 0
-      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: (BASIC_SET.has(x.key) || DUELS_SET.has(x.key)) ? 0 : weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
+      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: (BASIC_SET.has(x.key) || (typeof DUELS_SET!=='undefined' && DUELS_SET.has(x.key)) ? 0 : weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
 
       // Tier counts
       const seen = new Set(); let ultra=0, deep=0, med=0, light=0, ultralight=0;
