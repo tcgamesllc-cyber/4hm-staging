@@ -287,7 +287,7 @@ SIDEBOARD:
           <div class="score-badge" style="min-width:260px;">
             <div><b>Badges</b></div>
             <div id="badges" class="small">—</div>
-            <p class="small" style="margin:6px 0 0 0;">The Jank score rewards decks that run oddball, rarely‑seen cards and penalizes heavy reliance on the most commonly used staples. ("Staples" are currently defined as non-basic land and non-dual-land cards with total use ≥ 350). Extra credit is given when a high percentage of the deck is made up of unusual, rarely played "janky" cards. <i>In short: the rarer and denser the jank, the higher the score.</i></p>
+            <p class="small" style="margin:6px 0 0 0;">The Jank score rewards decks that run oddball, rarely‑seen cards and penalizes heavy reliance on common staples. Extra credit is given when a high percentage of the deck is made up of these unusual picks. <i>In short: the rarer and denser the jank, the higher the score.</i></p>
           </div>
         </div>
         <div class="score-badge" style="flex:1;">
@@ -658,6 +658,7 @@ SIDEBOARD:
     }
 
     function tierOf(total){ if (total <= THRESH_ULTRA) return 'Ultra‑Jank'; if (total <= THRESH_DEEP) return 'Deep Jank'; if (total <= THRESH_MED) return 'Medium Jank'; if (total <= THRESH_LIGHT) return 'Light Jank'; if (total <= THRESH_ULTRALIGHT) return 'Ultralight Jank'; return ''; }
+    function isLandKey(key){ const r = LEGAL_CARDS.get(key); return r ? typeHas(String(r.types||r.typesStr),'land') : false; }
 
     function scoreDeck(parsed, includeSide){
       const toRow = new Map(); const nameMap = new Map();
@@ -675,7 +676,10 @@ SIDEBOARD:
       let rawSide = 0; if (includeSide){ for (const s of matchedSide){ const w = (BASIC_SET.has(s.key) || DUELS_SET.has(s.key)) ? 0 : weight(s.total); rawSide += s.count * w; } }
       const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
       const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
-      const rawMax = 60 * 100; const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
+      const nonLandMain = matchedMain.reduce((a,m)=> a + (isLandKey(m.key)?0:m.count), 0);
+      const nonLandSide = includeSide ? matchedSide.reduce((a,m)=> a + (isLandKey(m.key)?0:m.count), 0) : 0;
+      const rawMax = Math.max(1, nonLandMain + (includeSide ? nonLandSide : 0)) * 100;
+      const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
 
       // Per-copy adjustments (MAIN only)
       let staplePenaltyCount = 0; let staplePenaltyPts = 0; // −points for overplayed staples
