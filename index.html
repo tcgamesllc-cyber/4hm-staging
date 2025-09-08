@@ -120,7 +120,10 @@
 
       .modal-card { max-height: 80vh; overflow:auto; }
       .search-input { width: 100%; }
-      .actions { width:100%; justify-content:flex-start; }
+      .actions { width:100%; justify-content:flex-start;       } catch(e){
+        console.error('renderTable error:', e);
+        showErr('Render failed: ' + (e && e.message ? e.message : e));
+      }
     }
   </style>
 </head>
@@ -350,6 +353,10 @@ SIDEBOARD:
     let BANNED = new Set();
     let RESTRICTED = new Set();
     const BASIC_SET = new Set(["plains","island","swamp","mountain","forest"]);
+    // Guarantee duals set exists before any usage
+    if (typeof DUELS_SET === 'undefined') {
+      var DUELS_SET = new Set(["badlands","bayou","plateau","savannah","scrubland","taiga","tropicalisland","tundra","undergroundsea","volcanicisland"]);
+    }
     const HARD_BANNED = new Set(["bloodmoon","karakas","arenaoftheancients","bronzetablet","cityinabottle","golgothiansylex","jeweledbird","libraryofalexandria","moat","rebirth","shahrazad","tempestefreet"]);
     let LEG6PLUS = new Set();
     let LEG5 = new Set();
@@ -566,6 +573,7 @@ SIDEBOARD:
     function passesNameSearch(row){ if(!nameQuery) return true; return row.card.toLowerCase().includes(nameQuery); }
 
     function renderTable(threshold, setFilter){
+      try {
       const rows = allRows.filter(r => r.total <= threshold && (!setFilter || r.set === setFilter) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
       rows.forEach(r => { r.jankValue = (BASIC_SET.has(r.key) || (typeof DUELS_SET!=='undefined' && DUELS_SET.has(r.key)) ? 0 : Number((jankWeight(r.total)/60).toFixed(2)); });
       const data = rows.map(r => {
@@ -577,22 +585,28 @@ SIDEBOARD:
       });
       if(dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); bindRowClicks(); }
       else {
-        dataTable = jQuery('#jankTable').DataTable({
-          data,
-          columns: [
-            { title: 'Set' },
-            { title: 'Card' },
-            { title: 'Main Deck' },
-            { title: 'Sideboard' },
-            { title: 'Total' },
-            { title: 'Jank Pts (per copy)' }
-          ],
-          order: [[4, 'desc'], [0, 'asc'], [1, 'asc']],
-          pageLength: 25,
-          deferRender: true,
-          dom: 'tip',
-          createdRow: function(row, data){ /* keep */ }
-        });
+        try {
+          dataTable = jQuery('#jankTable').DataTable({
+            data,
+            columns: [
+              { title: 'Set' },
+              { title: 'Card' },
+              { title: 'Main Deck' },
+              { title: 'Sideboard' },
+              { title: 'Total' },
+              { title: 'Jank Pts (per copy)' }
+            ],
+            order: [[4, 'desc'], [0, 'asc'], [1, 'asc']],
+            pageLength: 25,
+            deferRender: true,
+            dom: 'tip',
+            createdRow: function(row, data){ /* keep */ }
+          });
+        } catch(e){
+          console.error('DataTable init failed:', e);
+          showErr('Table init failed: ' + (e && e.message ? e.message : e));
+          return;
+        }
                   return isFinite(n) ? n : 0;
                 }
                 return data;
