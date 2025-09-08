@@ -680,7 +680,8 @@ SIDEBOARD:
       // Per-copy adjustments (MAIN only)
       let staplePenaltyCount = 0; let staplePenaltyPts = 0; // −points for overplayed staples
       let lowPlayBonusPts = 0; let lowPlayCounts = {ultra:0,deep:0,medium:0,light:0,ultralight:0};
-      for (const m of matchedMain){
+      const perCopyArray = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
+      for (const m of perCopyArray){
         const isBasic = BASIC_SET.has(m.key); const isDual = DUELS_SET.has(m.key);
         if (!isBasic && !isDual && m.total >= OVERPLAYED_THRESHOLD) { staplePenaltyCount += m.count; staplePenaltyPts += 0.50 * m.count; }
         if (m.total <= THRESH_ULTRA) { lowPlayBonusPts += 1.00 * m.count; lowPlayCounts.ultra += m.count; }
@@ -703,7 +704,7 @@ SIDEBOARD:
       const seen = new Set(); let ultra=0, deep=0, med=0, light=0, ultralight=0;
       for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_ULTRA) ultra++; else if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; else if(t<=THRESH_ULTRALIGHT) ultralight++; }
 
-      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light,ultralight}, copiesMain, over60, over60Bonus, staplePenaltyCount, staplePenaltyPts, lowPlayBonusPts, lowPlayCounts };
+      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light,ultralight}, copiesMain, over60, over60Bonus, staplePenaltyCount, staplePenaltyPts, lowPlayBonusPts, lowPlayCounts, includeSide };
     }
 
     function renderDeckScore(r){
@@ -726,8 +727,8 @@ SIDEBOARD:
         <div>🧊 <b>Ultralight‑jank (≤25 Total):</b> ${r.tierCounts.ultralight}</div>
         <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div>
         <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +25)</div>
-        <div>🚫 <b>Staples penalty:</b> ${r.staplePenaltyCount} (−${r.staplePenaltyPts.toFixed(2)})</div>
-        <div>✨ <b>Ultra-jank bonuses:</b> +${r.lowPlayBonusPts.toFixed(2)} (≤1×${r.lowPlayCounts.ultra}, ≤4×${r.lowPlayCounts.deep}, ≤10×${r.lowPlayCounts.medium}, ≤20×${r.lowPlayCounts.light}, ≤25×${r.lowPlayCounts.ultralight})</div>
+        <div>🚫 <b>Staples penalty${r.includeSide ? ' (incl. SB)' : ''}:</b> ${r.staplePenaltyCount} (−${r.staplePenaltyPts.toFixed(2)})</div>
+        <div>✨ <b>Ultra-jank bonuses${r.includeSide ? ' (incl. SB)' : ''}:</b> +${r.lowPlayBonusPts.toFixed(2)} (≤1×${r.lowPlayCounts.ultra}, ≤4×${r.lowPlayCounts.deep}, ≤10×${r.lowPlayCounts.medium}, ≤20×${r.lowPlayCounts.light}, ≤25×${r.lowPlayCounts.ultralight})</div>
         <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>
         <div>📦 <b>Cards above 60:</b> ${r.over60} (+${r.over60Bonus.toFixed(2)})</div>`;
       top.innerHTML = '';
