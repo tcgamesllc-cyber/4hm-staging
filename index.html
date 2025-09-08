@@ -120,10 +120,7 @@
 
       .modal-card { max-height: 80vh; overflow:auto; }
       .search-input { width: 100%; }
-      .actions { width:100%; justify-content:flex-start;       } catch(e){
-        console.error('renderTable error:', e);
-        showErr('Render failed: ' + (e && e.message ? e.message : e));
-      }
+      .actions { width:100%; justify-content:flex-start; }
     }
   </style>
 </head>
@@ -353,10 +350,6 @@ SIDEBOARD:
     let BANNED = new Set();
     let RESTRICTED = new Set();
     const BASIC_SET = new Set(["plains","island","swamp","mountain","forest"]);
-    // Guarantee duals set exists before any usage
-    if (typeof DUELS_SET === 'undefined') {
-      var DUELS_SET = new Set(["badlands","bayou","plateau","savannah","scrubland","taiga","tropicalisland","tundra","undergroundsea","volcanicisland"]);
-    }
     const HARD_BANNED = new Set(["bloodmoon","karakas","arenaoftheancients","bronzetablet","cityinabottle","golgothiansylex","jeweledbird","libraryofalexandria","moat","rebirth","shahrazad","tempestefreet"]);
     let LEG6PLUS = new Set();
     let LEG5 = new Set();
@@ -443,8 +436,7 @@ SIDEBOARD:
         const artist = String(r.artist||'').trim();
         const power = (r.power!=null? String(r.power).trim(): '');
         const toughness = (r.toughness!=null? String(r.toughness).trim(): '');
-        const saltRaw = r[saltKey];
-        const salt = (saltRaw==null || String(saltRaw).trim()==='') ? null : Number(saltRaw);
+        const salt = Number(r[saltKey]||0);
 
         NAME_MAP.set(key, String(rawName));
         const raw = { ...r, key, card:String(rawName), set, main, side, total:tot, manaCost, manaValue:mv, types:typesStr, supertypes:supersStr, subtypes:subtypesStr, rarity, artist, power, toughness, edhrecSaltiness:salt };
@@ -573,9 +565,8 @@ SIDEBOARD:
     function passesNameSearch(row){ if(!nameQuery) return true; return row.card.toLowerCase().includes(nameQuery); }
 
     function renderTable(threshold, setFilter){
-      try {
       const rows = allRows.filter(r => r.total <= threshold && (!setFilter || r.set === setFilter) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
-      rows.forEach(r => { r.jankValue = (BASIC_SET.has(r.key) || (typeof DUELS_SET!=='undefined' && DUELS_SET.has(r.key)) ? 0 : Number((jankWeight(r.total)/60).toFixed(2)); });
+      rows.forEach(r => { r.jankValue = BASIC_SET.has(r.key) ? 0 : Number((jankWeight(r.total)/60).toFixed(2)); });
       const data = rows.map(r => {
         const isBan = BANNED.has(r.key) || HARD_BANNED.has(r.key);
         const isRes = RESTRICTED.has(r.key);
@@ -585,40 +576,7 @@ SIDEBOARD:
       });
       if(dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); bindRowClicks(); }
       else {
-        try {
-          dataTable = jQuery('#jankTable').DataTable({
-            data,
-            columns: [
-              { title: 'Set' },
-              { title: 'Card' },
-              { title: 'Main Deck' },
-              { title: 'Sideboard' },
-              { title: 'Total' },
-              { title: 'Jank Pts (per copy)' }
-            ],
-            order: [[4, 'desc'], [0, 'asc'], [1, 'asc']],
-            pageLength: 25,
-            deferRender: true,
-            dom: 'tip',
-            createdRow: function(row, data){ /* keep */ }
-          });
-        } catch(e){
-          console.error('DataTable init failed:', e);
-          showErr('Table init failed: ' + (e && e.message ? e.message : e));
-          return;
-        }
-                  return isFinite(n) ? n : 0;
-                }
-                return data;
-              }
-            }
-          ],
-          order: [[4, 'desc'], [0, 'asc'], [1, 'asc']],
-          pageLength: 25,
-          deferRender: true,
-          dom: 'tip',
-          createdRow: function(row, data){ /* keep */ }
-        });
+        dataTable = jQuery('#jankTable').DataTable({ data, columns: [ { title: 'Set' }, { title: 'Card' }, { title: 'Main Deck' }, { title: 'Sideboard' }, { title: 'Total' }, { title: 'Jank Pts (per copy)' } ], order: [[4, 'desc'], [0, 'asc'], [1, 'asc']], pageLength: 25, deferRender: true, dom: 'tip', createdRow: function(row, data){ /* keep */ } });
         const topInfo = document.getElementById('topInfo');
         if(topInfo){ dataTable.on('draw', function(){ const info = dataTable.page.info(); topInfo.textContent = `Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`; }); dataTable.draw(); }
         const meta = document.getElementById('meta');
@@ -644,7 +602,7 @@ SIDEBOARD:
       const set = document.getElementById('setFilter').value || '';
       const rows = allRows.filter(r => r.total <= v && (!set || r.set === set) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
       const header = ['Set','Card','Main Deck','Sideboard','Total','Jank Pts (per copy)'];
-      const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total, (BASIC_SET.has(r.key) || (typeof DUELS_SET!=='undefined' && DUELS_SET.has(r.key)) ? '0' : (jankWeight(r.total)/60).toFixed(2)].join(',')));
+      const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total, BASIC_SET.has(r.key) ? '0' : (jankWeight(r.total)/60).toFixed(2)].join(',')));
       const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       const rtag = rarityState.size?`-rarity-${Array.from(rarityState).join('_')}`:'';
@@ -711,40 +669,24 @@ SIDEBOARD:
 
       // Jank score (basic lands contribute 0)
       const logMax = Math.log(Math.max(1,MAX_TOTAL) + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
-      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; const w = (BASIC_SET.has(m.key) || (typeof DUELS_SET!=='undefined' && DUELS_SET.has(m.key)) ? 0 : weight(m.total); raw += m.count * w; }
+      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; const w = BASIC_SET.has(m.key) ? 0 : weight(m.total); raw += m.count * w; }
       let rawSide = 0; if (includeSide){ for (const s of matchedSide){ const w = BASIC_SET.has(s.key) ? 0 : weight(s.total); rawSide += s.count * w; } }
       const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
       const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
       const rawMax = 60 * 100; const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
       const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1));
-      // Per-copy adjustments on MAIN only
-      let staplePenaltyCount = 0; let staplePenaltyPts = 0; // total negative points
-      let lowPlayBonusPts = 0; let lowPlayCounts = {ultra:0,deep:0,medium:0,light:0,ultralight:0};
-      const DUELS_SET = new Set(["badlands","bayou","plateau","savannah","scrubland","taiga","tropicalisland","tundra","undergroundsea","volcanicisland"]);
-      const OVERPLAYED_THRESHOLD = 350;
-      for (const m of matchedMain){
-        const isBasic = BASIC_SET.has(m.key);
-        const isDual = DUELS_SET.has(m.key);
-        if (!isBasic && !isDual && m.total >= OVERPLAYED_THRESHOLD) { staplePenaltyCount += m.count; staplePenaltyPts += 0.50 * m.count; }
-        if (m.total <= THRESH_ULTRA) { lowPlayBonusPts += 1.00 * m.count; lowPlayCounts.ultra += m.count; }
-        else if (m.total <= THRESH_DEEP) { lowPlayBonusPts += 0.75 * m.count; lowPlayCounts.deep += m.count; }
-        else if (m.total <= THRESH_MED) { lowPlayBonusPts += 0.50 * m.count; lowPlayCounts.medium += m.count; }
-        else if (m.total <= THRESH_LIGHT) { lowPlayBonusPts += 0.25 * m.count; lowPlayCounts.light += m.count; }
-        else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += 0.13 * m.count; lowPlayCounts.ultralight += m.count; }
-      }
-      const adjustedBase = baseScore - staplePenaltyPts + lowPlayBonusPts;
       const over60 = Math.max(0, copiesMain - 60);
       const over60Bonus = over60 * 0.25;
-      const finalScore = Math.max(0, Math.min(100, adjustedBase + bonus + over60Bonus));
+      const finalScore = Math.max(0, Math.min(100, baseScore + bonus + over60Bonus));
 
       // Top jankiest (by per‑copy weight), basics = 0
-      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: (BASIC_SET.has(x.key) || (typeof DUELS_SET!=='undefined' && DUELS_SET.has(x.key)) ? 0 : weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
+      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: BASIC_SET.has(x.key) ? 0 : weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
 
       // Tier counts
       const seen = new Set(); let ultra=0, deep=0, med=0, light=0, ultralight=0;
       for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_ULTRA) ultra++; else if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; else if(t<=THRESH_ULTRALIGHT) ultralight++; }
 
-      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light,ultralight}, copiesMain, over60, over60Bonus, staplePenaltyCount, staplePenaltyPts, lowPlayBonusPts, lowPlayCounts };
+      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light,ultralight}, copiesMain, over60, over60Bonus };
     }
 
     function renderDeckScore(r){
@@ -767,8 +709,6 @@ SIDEBOARD:
         <div>🧊 <b>Ultralight‑jank (≤25 Total):</b> ${r.tierCounts.ultralight}</div>
         <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div>
         <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +25)</div>
-        <div>🚫 <b>Staples penalty:</b> ${r.staplePenaltyCount} (−${r.staplePenaltyPts.toFixed(2)})</div>
-        <div>✨ <b>Ultra-jank bonuses:</b> +${r.lowPlayBonusPts.toFixed(2)} (≤1×${r.lowPlayCounts.ultra}, ≤4×${r.lowPlayCounts.deep}, ≤10×${r.lowPlayCounts.medium}, ≤20×${r.lowPlayCounts.light}, ≤25×${r.lowPlayCounts.ultralight})</div>
         <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>
         <div>📦 <b>Cards above 60:</b> ${r.over60} (+${r.over60Bonus.toFixed(2)})</div>`;
       top.innerHTML = '';
