@@ -643,8 +643,7 @@ SIDEBOARD:
       const lines = text.split(/\r?\n/);
       const main = new Map(); const side = new Map();
       let toSide = false;
-      for(let raw of lines){
-        const line = raw.trim(); if(!line) continue;
+      for(let raw of lines){ let line = String(raw).trim(); if(!line) continue; let perLineSB=false; const up=line.toUpperCase(); if(up.startsWith('SB')){ perLineSB=true; line=line.slice(2); while(line[0] && (line[0]===":"||line[0]==="-"||line[0]===" ")) line=line.slice(1); }
         if(/^side\s*board\s*:?/i.test(line)){ toSide = true; continue; }
         if(/^main\s*board\s*:?/i.test(line)){ toSide = false; continue; } // ignore explicit "Mainboard" headers
         const m = line.match(/^(\d+)?\s*(.+)$/); if(!m) continue;
@@ -652,7 +651,7 @@ SIDEBOARD:
         name = name.replace(/\[[^\]]+\]/g,'').replace(/\([^\)]*\)$/,'').trim();
         const key = normName(name);
         if(!key || key==='mainboard') continue; // ignore stray "mainboard" tokens
-        const bucket = toSide ? side : main; bucket.set(key, (bucket.get(key)||0) + (isFinite(n)?n:1));
+        const bucket = (toSide || perLineSB) ? side : main; bucket.set(key, (bucket.get(key)||0) + (isFinite(n)?n:1));
       }
       return {main, side};
     }
@@ -806,7 +805,7 @@ SIDEBOARD:
       const btn = document.getElementById('analyzeBtn');
       const includeSb = document.getElementById('includeSb');
       if(!btn) return;
-      file?.addEventListener('change', async () => { try{ const f = file.files && file.files[0]; if(!f) return; const text = await f.text(); ta.value = text; }catch(e){ console.error(e); }});
+      file?.addEventListener('change', () => { try{ const f = file.files && file.files[0]; if(!f) return; const finalize = (txt)=>{ ta.value = String(txt||''); btn.click(); }; if(f.text && typeof f.text==='function'){ f.text().then(finalize).catch(()=>{ const r=new FileReader(); r.onload=()=>finalize(r.result); r.readAsText(f); }); } else { const r=new FileReader(); r.onload=()=>finalize(r.result); r.readAsText(f); } }catch(e){ console.error(e); showErr('File read failed: '+(e?.message||e)); } });
       btn.addEventListener('click', () => {
         try{
           const text = (ta.value || '').trim(); if(!text){ alert('Paste a decklist first.'); return; }
