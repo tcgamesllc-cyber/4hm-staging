@@ -276,6 +276,7 @@ SIDEBOARD:
             <input type="file" id="deckFile" accept=".txt,.dek,.dec,.mwdeck,.csv,.list"/>
             <button id="analyzeBtn" class="btn">Analyze &amp; Validate Deck</button>
             <label style="margin-left:8px;"><input type="checkbox" id="includeSb"/> Include sideboard in scores</label>
+            
           </div>
         </div>
         <div class="score-hero">
@@ -566,7 +567,7 @@ SIDEBOARD:
 
     function renderTable(threshold, setFilter){
       const rows = allRows.filter(r => r.total <= threshold && (!setFilter || r.set === setFilter) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
-      rows.forEach(r => { r.jankValue = (BASIC_SET.has(r.key) || DUELS_SET.has(r.key)) ? 0 : Number((jankWeight(r.total)/60).toFixed(2)); });
+      rows.forEach(r => { r.jankValue = (BASIC_SET.has(r.key) || DUELS_SET.has(r.key) || r.total >= OVERPLAYED_THRESHOLD) ? 0 : Number((jankWeight(r.total)/60).toFixed(2)); });
       const data = rows.map(r => {
         const isBan = BANNED.has(r.key) || HARD_BANNED.has(r.key);
         const isRes = RESTRICTED.has(r.key);
@@ -685,7 +686,7 @@ SIDEBOARD:
 
       // Jank score (basic lands and ABUR duals contribute 0 raw weight)
       const logMax = Math.log(Math.max(1,MAX_TOTAL) + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
-      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; const w = (BASIC_SET.has(m.key) || DUELS_SET.has(m.key)) ? 0 : weight(m.total); raw += m.count * w; }
+      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; const w = ((BASIC_SET.has(m.key) || DUELS_SET.has(m.key) || m.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(m.total); raw += m.count * w; }
       let rawSide = 0; if (includeSide){ for (const s of matchedSide){ const w = (BASIC_SET.has(s.key) || DUELS_SET.has(s.key)) ? 0 : weight(s.total); rawSide += s.count * w; } }
 
       // Land‑neutral denominator: only MAIN non‑land copies define the scale
@@ -696,15 +697,18 @@ SIDEBOARD:
       const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
 
       // Per‑copy adjustments
-      //  • Staples penalty = MAIN ONLY (non‑basics, non‑duals, Total ≥ 350): −0.5 per copy
+      //  • Staples penalty = MAIN; +SB if applySbPenalties && includeSide (non‑basics, non‑duals, Total ≥ 350): −0.5 per copy
       //  • Ultra‑jank bonuses = include SB if checked, else main only
-      let staplePenaltyCount = 0; let staplePenaltyPts = 0; // −points for overplayed staples
       let lowPlayBonusPts = 0; let lowPlayCounts = {ultra:0,deep:0,medium:0,light:0,ultralight:0};
+      let staplesNeutralizedCount = 0;
 
-      // Penalties — main only
-      for (const m of matchedMain){
-        const isBasic = BASIC_SET.has(m.key); const isDual = DUELS_SET.has(m.key);
-        if (!isBasic && !isDual && m.total >= OVERPLAYED_THRESHOLD) { staplePenaltyCount += m.count; staplePenaltyPts += 0.50 * m.count; }
+      // Staples neutralization count (≥350, excluding basics/duals); no points added or removed
+      {
+        const arr = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
+        for (const m of arr){
+          const isBasic = BASIC_SET.has(m.key); const isDual = DUELS_SET.has(m.key);
+          if (!isBasic && !isDual && m.total >= OVERPLAYED_THRESHOLD) { staplesNeutralizedCount += m.count; }
+        }
       }
       // Bonuses — include SB if checked
       const bonusArray = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
@@ -719,17 +723,17 @@ SIDEBOARD:
       const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1));
       const over60 = Math.max(0, copiesMain - 60);
       const over60Bonus = over60 * 0.25;
-      const adjustedBase = baseScore - staplePenaltyPts + lowPlayBonusPts;
+      const adjustedBase = baseScore + lowPlayBonusPts;
       const finalScore = Math.max(0, Math.min(100, adjustedBase + bonus + over60Bonus));
 
       // Top jankiest (by per‑copy weight), basics & duals = 0
-      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: (BASIC_SET.has(x.key) || DUELS_SET.has(x.key)) ? 0 : weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
+      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: ((BASIC_SET.has(x.key) || DUELS_SET.has(x.key) || x.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
 
       // Tier counts (unique card names in main only)
       const seen = new Set(); let ultra=0, deep=0, med=0, light=0, ultralight=0;
       for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_ULTRA) ultra++; else if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; else if(t<=THRESH_ULTRALIGHT) ultralight++; }
 
-      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light,ultralight}, copiesMain, over60, over60Bonus, staplePenaltyCount, staplePenaltyPts, lowPlayBonusPts, lowPlayCounts, includeSide };
+      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light,ultralight}, copiesMain, over60, over60Bonus, staplesNeutralizedCount, lowPlayBonusPts, lowPlayCounts, includeSide };
     }
 
     function renderDeckScore(r){
@@ -752,7 +756,7 @@ SIDEBOARD:
         <div>🧊 <b>Ultralight‑jank (≤25 Total):</b> ${r.tierCounts.ultralight}</div>
         <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div>
         <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +25)</div>
-        <div>🚫 <b>Staples penalty${r.includeSide ? ' (main only)' : ''}:</b> ${r.staplePenaltyCount} (−${r.staplePenaltyPts.toFixed(2)})</div>
+        <div>🧱 <b>Staples (≥350) neutralized:</b> ${r.staplesNeutralizedCount} (0 pts each)</div>
         <div>✨ <b>Ultra-jank bonuses${r.includeSide ? ' (incl. SB)' : ''}:</b> +${r.lowPlayBonusPts.toFixed(2)} (≤1×${r.lowPlayCounts.ultra}, ≤4×${r.lowPlayCounts.deep}, ≤10×${r.lowPlayCounts.medium}, ≤20×${r.lowPlayCounts.light}, ≤25×${r.lowPlayCounts.ultralight})</div>
         <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>
         <div>📦 <b>Cards above 60:</b> ${r.over60} (+${r.over60Bonus.toFixed(2)})</div>`;
@@ -815,6 +819,7 @@ SIDEBOARD:
       const file = document.getElementById('deckFile');
       const btn = document.getElementById('analyzeBtn');
       const includeSb = document.getElementById('includeSb');
+      
       if(!btn) return;
       file?.addEventListener('change', () => {
         try{
