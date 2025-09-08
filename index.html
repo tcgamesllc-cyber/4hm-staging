@@ -578,7 +578,23 @@ SIDEBOARD:
       });
       if(dataTable){ dataTable.clear().rows.add(data).order([[4,'desc'],[0,'asc'],[1,'asc']]).draw(); bindRowClicks(); }
       else {
-        dataTable = jQuery('#jankTable').DataTable({ data, columns: [ { title: 'Set' }, { title: 'Card' }, { title: 'Main Deck' }, { title: 'Sideboard' }, { title: 'Total' }, { title: 'Jank Pts (per copy)' }, { title: 'Saltiness' }, order: [[4, 'desc'], [0, 'asc'], [1, 'asc']], pageLength: 25, deferRender: true, dom: 'tip', createdRow: function(row, data){ /* keep */ } });
+        dataTable = jQuery('#jankTable').DataTable({
+          data,
+          columns: [
+            { title: 'Set' },
+            { title: 'Card' },
+            { title: 'Main Deck' },
+            { title: 'Sideboard' },
+            { title: 'Total' },
+            { title: 'Jank Pts (per copy)' },
+            { title: 'Saltiness' }
+          ],
+          order: [[4, 'desc'], [0, 'asc'], [1, 'asc']],
+          pageLength: 25,
+          deferRender: true,
+          dom: 'tip',
+          createdRow: function(row, data){ /* keep */ }
+        });
         const topInfo = document.getElementById('topInfo');
         if(topInfo){ dataTable.on('draw', function(){ const info = dataTable.page.info(); topInfo.textContent = `Showing ${info.start+1} to ${info.end} of ${info.recordsDisplay} entries`; }); dataTable.draw(); }
         const meta = document.getElementById('meta');
