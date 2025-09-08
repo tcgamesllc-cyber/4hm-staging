@@ -99,7 +99,7 @@
       #nameSearch { width:100%; }
       /* Slider and number stack nicely */
       #threshold { width:100%; flex:1 1 100%; min-width:160px; }
-      #thresholdNumber { flex:1 1 80px; }
+      #thresholdNumber { width:72px; }
       body { border-width: 16px; }
       header h1 { font-size: 24px; }
       header .sub { font-size: 13px; }
@@ -273,7 +273,7 @@ SIDEBOARD:
 3 Crumble
 ..."></textarea>
           <div class="small" style="margin-top:6px;">
-            <input type="file" id="deckFile" accept=".txt,.dek,.dec"/>
+            <input type="file" id="deckFile" accept=".txt,.dek,.dec,.mwdeck,.csv,.list"/>
             <button id="analyzeBtn" class="btn">Analyze &amp; Validate Deck</button>
             <label style="margin-left:8px;"><input type="checkbox" id="includeSb"/> Include sideboard in scores</label>
           </div>
@@ -287,7 +287,7 @@ SIDEBOARD:
           <div class="score-badge" style="min-width:260px;">
             <div><b>Badges</b></div>
             <div id="badges" class="small">—</div>
-            <p class="small" style="margin:6px 0 0 0;">The Jank score rewards decks that run oddball, rarely‑seen cards and penalizes heavy reliance on the most commonly used staples. ("Staples" are currently defined as non-basic land and non-dual-land cards with total use ≥ 350). Extra credit is given when a high percentage of the deck is made up of unusual, rarely played "janky" cards. <i>In short: the rarer and denser the jank, the higher the score.</i></p>
+            <p class="small" style="margin:6px 0 0 0;">The Jank score rewards decks that run oddball, rarely‑seen cards and penalizes heavy reliance on common staples. Extra credit is given when a high percentage of the deck is made up of these unusual picks. <i>In short: the rarer and denser the jank, the higher the score.</i></p>
           </div>
         </div>
         <div class="score-badge" style="flex:1;">
@@ -418,7 +418,6 @@ SIDEBOARD:
       const mainKey  = headers.find(h => /4hm\s*main(deck)?/i.test(h)) || '4hmMainDeck';
       const sideKey  = headers.find(h => /4hm\s*side(board)?/i.test(h)) || '4hmSideBoard';
       const totalKey = headers.find(h => /4hm\s*total/i.test(h)) || '4hmTotal';
-      const saltKey  = headers.find(h => /edhrec\s*salt/i.test(h)) || 'edhrecSaltiness';
       const toNum = v => { const n = Number(String(v||'').replace(/,/g,'')); return isFinite(n) ? n : 0; };
 
       for(const r of rows){
@@ -438,10 +437,9 @@ SIDEBOARD:
         const artist = String(r.artist||'').trim();
         const power = (r.power!=null? String(r.power).trim(): '');
         const toughness = (r.toughness!=null? String(r.toughness).trim(): '');
-        const salt = Number(r[saltKey]||0);
 
         NAME_MAP.set(key, String(rawName));
-        const raw = { ...r, key, card:String(rawName), set, main, side, total:tot, manaCost, manaValue:mv, types:typesStr, supertypes:supersStr, subtypes:subtypesStr, rarity, artist, power, toughness, edhrecSaltiness:salt };
+        const raw = { ...r, key, card:String(rawName), set, main, side, total:tot, manaCost, manaValue:mv, types:typesStr, supertypes:supersStr, subtypes:subtypesStr, rarity, artist, power, toughness };
         LEGAL_CARDS.set(key, raw);
         if(String(r.banned).toLowerCase()==='true') BANNED.add(key);
         if(String(r.restricted).toLowerCase()==='true') RESTRICTED.add(key);
@@ -450,7 +448,7 @@ SIDEBOARD:
         if(typesSet.has('creature') && supersSet.has('legendary') && mv===5) LEG5.add(key);
         if(tot>MAX_TOTAL) MAX_TOTAL = tot;
 
-        allRows.push({ set, card:String(rawName), main, side, total:tot, jankValue:0, colors:colorSet, colorless:colorSet.size===0, text, manaCost, mv, key, typesStr, supersStr, subtypesStr, typesSet, supersSet, rarity, artist, power, toughness, edhrecSaltiness:salt });
+        allRows.push({ set, card:String(rawName), main, side, total:tot, jankValue:0, colors:colorSet, colorless:colorSet.size===0, text, manaCost, mv, key, typesStr, supersStr, subtypesStr, typesSet, supersSet, rarity, artist, power, toughness });
       }
     }
 
@@ -597,6 +595,7 @@ SIDEBOARD:
         if(!row) return;
         showCardModal(row);
       });
+      // Also top-10 links are same class — no extra wiring needed
     }
 
     function exportCSV(){
@@ -639,23 +638,38 @@ SIDEBOARD:
     document.getElementById('cardModal').addEventListener('click', (e)=>{ if(e.target.id==='cardModal') e.currentTarget.classList.remove('open'); });
 
     // === DECK ANALYZER ===
-    function parseDeck(text){
-      const lines = text.split(/\r?\n/);
+    function parseDeckSmart(text){
+      const lines = String(text||'').split(/\r?\n/);
       const main = new Map(); const side = new Map();
       let toSide = false;
       for(let raw of lines){
-        const line = raw.trim(); if(!line) continue;
+        if(raw == null) continue;
+        let line = String(raw).trim();
+        if(!line || /^\s*\/\//.test(line)) continue; // ignore comments
         if(/^side\s*board\s*:?/i.test(line)){ toSide = true; continue; }
-        if(/^main\s*board\s*:?/i.test(line)){ toSide = false; continue; } // ignore explicit "Mainboard" headers
-        const m = line.match(/^(\d+)?\s*(.+)$/); if(!m) continue;
-        const n = m[1] ? parseInt(m[1],10) : 1; let name = m[2];
-        name = name.replace(/\[[^\]]+\]/g,'').replace(/\([^\)]*\)$/,'').trim();
+        if(/^main\s*board\s*:?/i.test(line)){ toSide = false; continue; }
+        // Per-line SB prefix (e.g., "SB: 3 Card Name")
+        let perLineSB = false;
+        if(/^SB\b\s*:?-?/i.test(line)){
+          perLineSB = true;
+          line = line.replace(/^SB\b\s*:?-?\s*/i, '');
+        }
+        // Strip set/collector annotations and trailing parentheses/notes
+        line = line.replace(/\[[^\]]+\]/g,'').replace(/\([^\)]*\)$/,'').trim();
+        if(!line) continue;
+        // Extract count + name
+        let count = 1, name = line;
+        const m = line.match(/^(\d+)\s+(.+)$/);
+        if(m){ count = parseInt(m[1],10); name = m[2]; }
         const key = normName(name);
-        if(!key || key==='mainboard') continue; // ignore stray "mainboard" tokens
-        const bucket = toSide ? side : main; bucket.set(key, (bucket.get(key)||0) + (isFinite(n)?n:1));
+        if(!key || key==='mainboard') continue; // ignore stray tokens
+        const bucket = (toSide || perLineSB) ? side : main;
+        bucket.set(key, (bucket.get(key)||0) + (isFinite(count)?count:1));
       }
       return {main, side};
     }
+
+    function isLandKey(key){ const r = LEGAL_CARDS.get(key); return r ? /(^|\s|,)land(,|\s|$)/i.test(String(r.types||r.typesStr)) : false; }
 
     function tierOf(total){ if (total <= THRESH_ULTRA) return 'Ultra‑Jank'; if (total <= THRESH_DEEP) return 'Deep Jank'; if (total <= THRESH_MED) return 'Medium Jank'; if (total <= THRESH_LIGHT) return 'Light Jank'; if (total <= THRESH_ULTRALIGHT) return 'Ultralight Jank'; return ''; }
 
@@ -669,21 +683,32 @@ SIDEBOARD:
       for(const item of mainArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Main: ${item.count} × ${item.key}`); continue; } matchedMain.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
       for(const item of sideArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Side: ${item.count} × ${item.key}`); continue; } matchedSide.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
 
-      // Jank score (basic lands and ABUR duals contribute 0)
+      // Jank score (basic lands and ABUR duals contribute 0 raw weight)
       const logMax = Math.log(Math.max(1,MAX_TOTAL) + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
       let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; const w = (BASIC_SET.has(m.key) || DUELS_SET.has(m.key)) ? 0 : weight(m.total); raw += m.count * w; }
       let rawSide = 0; if (includeSide){ for (const s of matchedSide){ const w = (BASIC_SET.has(s.key) || DUELS_SET.has(s.key)) ? 0 : weight(s.total); rawSide += s.count * w; } }
+
+      // Land‑neutral denominator: only MAIN non‑land copies define the scale
+      const nonLandMain = matchedMain.reduce((a,m)=> a + (isLandKey(m.key)?0:m.count), 0);
       const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
       const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
-      const rawMax = 60 * 100; const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
+      const rawMax = Math.max(1, nonLandMain) * 100; // sideboard NOT in denominator to avoid dilution
+      const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
 
-      // Per-copy adjustments (MAIN only)
+      // Per‑copy adjustments
+      //  • Staples penalty = MAIN ONLY (non‑basics, non‑duals, Total ≥ 350): −0.5 per copy
+      //  • Ultra‑jank bonuses = include SB if checked, else main only
       let staplePenaltyCount = 0; let staplePenaltyPts = 0; // −points for overplayed staples
       let lowPlayBonusPts = 0; let lowPlayCounts = {ultra:0,deep:0,medium:0,light:0,ultralight:0};
-      const perCopyArray = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
-      for (const m of perCopyArray){
+
+      // Penalties — main only
+      for (const m of matchedMain){
         const isBasic = BASIC_SET.has(m.key); const isDual = DUELS_SET.has(m.key);
         if (!isBasic && !isDual && m.total >= OVERPLAYED_THRESHOLD) { staplePenaltyCount += m.count; staplePenaltyPts += 0.50 * m.count; }
+      }
+      // Bonuses — include SB if checked
+      const bonusArray = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
+      for (const m of bonusArray){
         if (m.total <= THRESH_ULTRA) { lowPlayBonusPts += 1.00 * m.count; lowPlayCounts.ultra += m.count; }
         else if (m.total <= THRESH_DEEP) { lowPlayBonusPts += 0.75 * m.count; lowPlayCounts.deep += m.count; }
         else if (m.total <= THRESH_MED) { lowPlayBonusPts += 0.50 * m.count; lowPlayCounts.medium += m.count; }
@@ -700,7 +725,7 @@ SIDEBOARD:
       // Top jankiest (by per‑copy weight), basics & duals = 0
       const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: (BASIC_SET.has(x.key) || DUELS_SET.has(x.key)) ? 0 : weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
 
-      // Tier counts
+      // Tier counts (unique card names in main only)
       const seen = new Set(); let ultra=0, deep=0, med=0, light=0, ultralight=0;
       for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_ULTRA) ultra++; else if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; else if(t<=THRESH_ULTRALIGHT) ultralight++; }
 
@@ -727,7 +752,7 @@ SIDEBOARD:
         <div>🧊 <b>Ultralight‑jank (≤25 Total):</b> ${r.tierCounts.ultralight}</div>
         <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div>
         <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +25)</div>
-        <div>🚫 <b>Staples penalty${r.includeSide ? ' (incl. SB)' : ''}:</b> ${r.staplePenaltyCount} (−${r.staplePenaltyPts.toFixed(2)})</div>
+        <div>🚫 <b>Staples penalty${r.includeSide ? ' (main only)' : ''}:</b> ${r.staplePenaltyCount} (−${r.staplePenaltyPts.toFixed(2)})</div>
         <div>✨ <b>Ultra-jank bonuses${r.includeSide ? ' (incl. SB)' : ''}:</b> +${r.lowPlayBonusPts.toFixed(2)} (≤1×${r.lowPlayCounts.ultra}, ≤4×${r.lowPlayCounts.deep}, ≤10×${r.lowPlayCounts.medium}, ≤20×${r.lowPlayCounts.light}, ≤25×${r.lowPlayCounts.ultralight})</div>
         <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>
         <div>📦 <b>Cards above 60:</b> ${r.over60} (+${r.over60Bonus.toFixed(2)})</div>`;
@@ -748,7 +773,7 @@ SIDEBOARD:
         const row = LEGAL_CARDS.get(key); if(!row) continue;
         if(isLegendaryCreature(row)) legendaryCreatureInMain += count;
         const t = Number(row['4hmTotal']||row.total||0);
-        if(t<=25 && !isLegendaryCreature(row)) { seenJank.add(key); } // UPDATED threshold to 25
+        if(t<=25 && !isLegendaryCreature(row)) { seenJank.add(key); }
       }
       const jankDistinctNonLegendMain = seenJank.size;
 
@@ -791,11 +816,30 @@ SIDEBOARD:
       const btn = document.getElementById('analyzeBtn');
       const includeSb = document.getElementById('includeSb');
       if(!btn) return;
-      file?.addEventListener('change', async () => { try{ const f = file.files && file.files[0]; if(!f) return; const text = await f.text(); ta.value = text; }catch(e){ console.error(e); }});
+      file?.addEventListener('change', () => {
+        try{
+          const f = file.files && file.files[0];
+          if(!f) return;
+          const finalize = (txt) => { ta.value = String(txt||''); /* auto analyze for convenience */ btn.click(); };
+          if(f.text && typeof f.text === 'function'){
+            f.text().then(finalize).catch(err=>{ console.error(err); // fallback
+              const reader = new FileReader();
+              reader.onload = () => finalize(reader.result);
+              reader.onerror = () => { console.error(reader.error); showErr('File read failed: ' + (reader.error?.message||'unknown error')); };
+              reader.readAsText(f);
+            });
+          } else {
+            const reader = new FileReader();
+            reader.onload = () => finalize(reader.result);
+            reader.onerror = () => { console.error(reader.error); showErr('File read failed: ' + (reader.error?.message||'unknown error')); };
+            reader.readAsText(f);
+          }
+        }catch(e){ console.error(e); showErr('File read failed: ' + (e && e.message ? e.message : e)); }
+      });
       btn.addEventListener('click', () => {
         try{
           const text = (ta.value || '').trim(); if(!text){ alert('Paste a decklist first.'); return; }
-          const parsed = parseDeck(text);
+          const parsed = parseDeckSmart(text);
           const report = scoreDeck(parsed, includeSb?.checked);
           renderDeckScore(report);
           const res = validateDeck(parsed);
