@@ -309,7 +309,8 @@ SIDEBOARD:
       <h3 style="margin:0 0 8px 0;">About Jank‑O‑Meter</h3>
       <p class="small" style="margin:6px 0;">This tool defines <b>Jank</b> as any legal 4HM card that has appeared in tournament decks fewer times than the chosen threshold. Adjust the slider to reveal the deepest jank of the format.</p>
       <p class="small" style="margin:6px 0;">📊 <b>Data Source:</b> 4HM Tournament Card Usage (Google Sheets → live CSV). Thanks to <a href="http://schmakt.com/4HM/Default.aspx" target="_blank">Jim</a> for the curation.</p>
-      <p class="small" id="aboutUpdated" style="margin:6px 0;">⏱️ <b>Last updated:</b> …</p>
+      $1
+      <p class=\"small\"><a href=\"#\" id=\"releaseNotesOpen\">Release notes<\/a><\/p>
     </div>
   </div>
 
@@ -395,7 +396,7 @@ SIDEBOARD:
     function jankWeight(t){ const logMax = Math.log(Math.max(1,MAX_TOTAL)+1); return Math.round(100 * (1 - (Math.log((Number(t)||0)+1) / logMax))); }
 
     // === BOOT ===
-    window.addEventListener('DOMContentLoaded', () => { try { bindDeckTools(); } catch(e){ console.error(e); } boot(); });
+    window.addEventListener('DOMContentLoaded', () => { try { bindDeckTools(); } catch(e){ console.error(e); } boot(); initReleaseNotes(); });
 
     async function boot(){
       try{
@@ -852,7 +853,53 @@ SIDEBOARD:
         }catch(e){ console.error(e); showErr('Analyze failed: ' + (e && e.message ? e.message : e)); alert('Analyze failed. See error box above.'); }
       });
     }
+    function initReleaseNotes(){
+      const modal = document.getElementById('releaseModal');
+      const body = document.getElementById('releaseNotesBody');
+      const open = document.getElementById('releaseNotesOpen');
+      const close = document.getElementById('releaseClose');
+      if(!modal || !body || !open || !close) return;
+      const notes = [
+        {title:'v1.4 — Land-neutral & Neutral Staples (Sep 2025)', items:[
+          'Base score now ignores lands; basics & ABUR duals remain 0 pts.',
+          'Staples (4HM Total ≥ 350) are neutral: 0 pts, no penalties.',
+          'Sideboard, when included, adds bonuses but never dilutes the denominator.',
+          'Over-60 bonus retained (+0.25 per main-deck card above 60).',
+          'Badges show Ultra‑jank bonuses, Staples neutralized count, and Cards above 60.',
+          'Improved file loader and “SB:” per-line parsing.'
+        ]},
+        {title:'v1.3 — Over‑60 bonus & Mobile filters', items:[
+          '+0.25 per card above 60 and “Cards above 60” badge.',
+          'Mobile hamburger; Threshold & Quick stay visible.',
+          'Top‑10 Jankiest links to modal.',
+          'Per-card Jank pts shown as decimals.'
+        ]},
+        {title:'v1.2 — Ultralight ≤25 & validation', items:[
+          'Added Quick ≤25 and Ultralight Jank badge.',
+          'Validator: 4 rarely‑played non‑legendary creature threshold raised to ≤25.',
+          'Ignored “Mainboard” token in deck imports.'
+        ]},
+        {title:'v1.1 — Salt removed', items:[
+          'Removed saltiness column and Top‑10 saltiest.'
+        ]}
+      ];
+      body.innerHTML = notes.map(n => `<h4 style="margin:8px 0 4px 0;">${n.title}</h4><ul style="margin:4px 0 10px 20px;">${n.items.map(i=>`<li>${i}</li>`).join('')}</ul>`).join('');
+      open.addEventListener('click', (e)=>{ e.preventDefault(); modal.classList.add('open'); });
+      close.addEventListener('click', ()=> modal.classList.remove('open'));
+      modal.addEventListener('click', (e)=>{ if(e.target.id==='releaseModal') modal.classList.remove('open'); });
+    }
   </script>
+
+  <!-- Release Notes Modal -->
+  <div id="releaseModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="relTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title" id="relTitle">Release notes</div>
+        <button class="modal-close" id="releaseClose">Close</button>
+      </div>
+      <div class="small" id="releaseNotesBody"></div>
+    </div>
+  </div>
 
   <footer style="text-align:center; padding:10px; font-size:13px; color:#5a3816;">
     <p style="font-size:12px; color:#7c6a4c; text-align:center; margin-top:10px;">
