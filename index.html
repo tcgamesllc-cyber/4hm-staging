@@ -570,26 +570,28 @@ SIDEBOARD:
       const close = document.getElementById('releaseClose');
       if(!modal || !body || !open || !close) return;
       const notes = [
-        {title:'v1.4 — Land‑neutral & Neutral Staples (Sep 2025)', items:[
-          'Base score now ignores lands; basics & ABUR duals remain 0 pts.',
+        {title:'v1.4 — Land‑neutral & Neutral Staples (9/9/2025)', items:[
+          'Base score now ignores lands (they no longer dilute your ceiling); basics & ABUR duals remain 0 pts.',
           'Staples (4HM Total ≥ 350) are neutral: 0 pts, no penalties.',
           'Sideboard, when included, adds bonuses but never dilutes the denominator.',
           'Over‑60 bonus retained (+0.25 per main‑deck card above 60).',
+          'Jank bonuses (per copy) remain: ≤1: +1.00, ≤4: +0.75, ≤10: +0.50, ≤20: +0.25, ≤25: +0.13.',
           'Badges show Ultra‑jank bonuses, Staples neutralized count, and Cards above 60.',
           'Improved file loader and “SB:” per‑line parsing.'
+          'Added release notes.'
         ]},
-        {title:'v1.3 — Over‑60 bonus & Mobile filters', items:[
+        {title:'v1.3 — Over‑60 bonus & Mobile filters (9/8/2025)', items:[
           '+0.25 per card above 60 and “Cards above 60” badge.',
           'Mobile hamburger; Threshold & Quick stay visible.',
           'Top‑10 Jankiest links to modal.',
           'Per‑card Jank pts shown as decimals.'
         ]},
-        {title:'v1.2 — Ultralight ≤25 & validation', items:[
+        {title:'v1.2 — Ultralight ≤25 & validation (9/8/2025)', items:[
           'Added Quick ≤25 and Ultralight Jank badge.',
           'Validator: 4 rarely‑played non‑legendary creature threshold raised to ≤25.',
           'Ignored “Mainboard” token in deck imports.'
         ]},
-        {title:'v1.1 — Salt removed', items:[
+        {title:'v1.1 — Salt removed (9/7/2025)', items:[
           'Removed saltiness column and Top‑10 saltiest.'
         ]}
       ];
