@@ -126,13 +126,16 @@
 </head>
 <body>
 <div id="stagingBanner">
-  🚧 STAGING VERSION — Not for Production Use 🚧
+  🚧 STAGING VERSION — Not for Production Use 🚧 | 
+  <a href="https://tcgamesllc-cyber.github.io/4hm/" target="_blank">
+    Go to Production Site →
+  </a>
 </div>
 
 <style>
   #stagingBanner {
-    background: #ffeb3b;    /* bright but softer yellow */
-    color: #000;            /* black text */
+    background: #b00;       /* deep red */
+    color: #fff;
     text-align: center;
     font-weight: bold;
     font-size: 20px;
@@ -143,7 +146,17 @@
     border-bottom: 3px solid #000;
     letter-spacing: 1px;
   }
+  #stagingBanner a {
+    color: #ff0;            /* yellow link for contrast */
+    text-decoration: underline;
+    margin-left: 6px;
+  }
+  #stagingBanner a:hover {
+    color: #fff;
+    text-decoration: none;
+  }
 </style>
+
 
 
   <header>
