@@ -125,6 +125,31 @@
   </style>
 </head>
 <body>
+  <div id="stagingBanner">
+  🚧 STAGING VERSION — Not for Production Use 🚧
+</div>
+
+<style>
+  #stagingBanner {
+    background: repeating-linear-gradient(
+      45deg,
+      #b00,
+      #b00 10px,
+      #ff0 10px,
+      #ff0 20px
+    );
+    color: black;
+    text-align: center;
+    font-weight: bold;
+    font-size: 20px;
+    padding: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 2000;
+    border-bottom: 3px solid #000;
+  }
+</style>
+
   <header>
     <h1>⚡ 4HM Jank‑O‑Meter ⚡</h1>
     <div class="sub">Filter rarely‑played cards, score your deck’s Jank, and validate 4HM legality with the current rules.</div>
