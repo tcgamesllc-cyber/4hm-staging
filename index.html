@@ -420,16 +420,57 @@ SIDEBOARD:
     window.addEventListener('DOMContentLoaded', () => { try { bindDeckTools(); } catch(e){ console.error(e); } boot(); initReleaseNotes(); });
 
     async function boot(){
-      try{
-        const [pool, br] = await Promise.all([ parseCSV(CARDPOOL_URL), parseCSV(BR_URL) ]);
-        ingestPool(pool);
-        ingestBR(br);
-        if(MAX_TOTAL<1) MAX_TOTAL = 1;
-        initUI();
-        document.getElementById('lastUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`;
-        const aboutEl = document.getElementById('aboutUpdated'); if(aboutEl){ aboutEl.innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`; }
-      }catch(e){ showErr('Data load issue — try refresh. '+(e?.message||e)); console.error(e); }
+  try{
+    console.log('Starting data load...');
+    
+    // Test CSV URLs individually
+    console.log('Fetching cardpool data...');
+    const pool = await parseCSV(CARDPOOL_URL);
+    console.log('Cardpool data:', pool.length, 'rows');
+    console.log('Sample row:', pool[0]);
+    
+    console.log('Fetching B&R data...');
+    const br = await parseCSV(BR_URL);
+    console.log('B&R data:', br.length, 'rows');
+    console.log('Sample row:', br[0]);
+    
+    if (!pool || pool.length === 0) {
+      throw new Error('Cardpool data is empty or failed to load');
     }
+    
+    ingestPool(pool);
+    ingestBR(br);
+    
+    console.log('Data ingestion complete. allRows:', allRows.length);
+    console.log('LEGAL_CARDS size:', LEGAL_CARDS.size);
+    console.log('MAX_TOTAL:', MAX_TOTAL);
+    
+    if(MAX_TOTAL<1) MAX_TOTAL = 1;
+    if(allRows.length === 0) {
+      throw new Error('No data rows were processed successfully');
+    }
+    
+    initUI();
+    document.getElementById('lastUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`;
+    const aboutEl = document.getElementById('aboutUpdated'); 
+    if(aboutEl){ 
+      aboutEl.innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`; 
+    }
+    
+    console.log('Boot complete successfully');
+    
+  }catch(e){ 
+    console.error('Boot failed:', e);
+    const errorMsg = `Data load failed: ${e?.message || e}`;
+    showErr(errorMsg);
+    
+    // Also show in the meta section
+    const meta = document.getElementById('meta');
+    if(meta) {
+      meta.innerHTML = `<span style="color: red;">${errorMsg}</span>`;
+    }
+  }
+}
 
     function showErr(msg){ const el = document.getElementById('err'); el.style.display='block'; el.textContent = (msg && msg.message) ? msg.message : (typeof msg === 'string' ? msg : JSON.stringify(msg)); }
 
