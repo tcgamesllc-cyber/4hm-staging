@@ -433,27 +433,26 @@ SIDEBOARD:
     }
     
     function parseCSV(url){
-      return new Promise((resolve) => {
-        try{
-          const bust = (url.indexOf('?')>-1? '&' : '?') + 't=' + Date.now();
-          const u = url + bust;
-          if(typeof Papa==='undefined'){ showErr('Papa.parse not loaded'); return resolve([]); }
-          Papa.parse(u, {
-            download: true,
-            header: true,
-            skipEmptyLines: 'greedy',
-            complete: res => {
-              const rows = Array.isArray(res?.data) ? res.data : [];
-              if(!rows.length){ showErr('CSV returned 0 rows: ' + u); }
-              resolve(rows);
-            },
-            error: err => { console.error('CSV parse error', u, err); showErr(err?.message||err); resolve([]); }
-          });
-        }catch(e){ console.error(e); showErr(e?.message||e); resolve([]); }
+  return new Promise((resolve) => {
+    try{
+      const bust = (url.indexOf('?')>-1? '&' : '?') + 't=' + Date.now();
+      const u = url + bust;
+      if(typeof Papa==='undefined'){ showErr('Papa.parse not loaded'); return resolve([]); }
+      Papa.parse(u, {
+        download: true,
+        header: true,
+        skipEmptyLines: 'greedy',
+        complete: res => {
+          const rows = Array.isArray(res?.data) ? res.data : [];
+          if(!rows.length){ showErr('CSV returned 0 rows: ' + u); }
+          resolve(rows);
+        },
+        error: err => { console.error('CSV parse error', u, err); showErr(err?.message||err); resolve([]); }
       });
-    }
-
-    function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i').test(t||''); }
+    }catch(e){ console.error(e); showErr(e?.message||e); resolve([]); }
+  });
+}
+function typeHas(t, word){ return new RegExp(`(?:^|,|\s)${word}(?:,|\s|$)`, 'i').test(t||''); }(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i').test(t||''); }
     function isLegendaryCard(row){ return String(row.supertypes||'').toLowerCase().includes('legendary'); }
     function isLegendaryCreature(row){ return isLegendaryCard(row) && typeHas(String(row.types),'creature'); }
     function parseColorsFromRow(r){ const out=new Set(); let cols=r.colors||r.colorIdentity||r.colours||''; if(cols){ String(cols).split(/[\s,;]+/).forEach(tok=>{ const c=String(tok).trim().toUpperCase(); if(/^[WUBRG]$/.test(c)) out.add(c); }); } if(!out.size && r.manaCost){ const m=String(r.manaCost); if(/{W}/i.test(m)) out.add('W'); if(/{U}/i.test(m)) out.add('U'); if(/{B}/i.test(m)) out.add('B'); if(/{R}/i.test(m)) out.add('R'); if(/{G}/i.test(m)) out.add('G'); } return out; }
@@ -800,7 +799,7 @@ SIDEBOARD:
 
       // Per‑copy adjustments
       //  • Staples (≥350) are neutral — tracked for a badge only
-      //  • Ultra‑jank bonuses = include SB if checked, else main only
+      //  •  = include SB if checked, else main only
       let lowPlayBonusPts = 0; let lowPlayCounts = {ultra:0,deep:0,medium:0,light:0,ultralight:0};
       let staplesNeutralizedCount = 0;
 
@@ -850,7 +849,7 @@ SIDEBOARD:
       if (r.bonus >= 10) msg += ' 🧪 Dense spice pocket detected.';
       flavor.textContent = msg;
       badges.innerHTML = `
-        <div>🧿 <b>Ultra‑jank (≤1 Total):</b> 0</div>
+        <div>🧿 <b>Ultra (removed) Total):</b> 0</div>
         <div>💀 <b>Deep‑jank (≤4 Total):</b> ${r.tierCounts.deep}</div>
         <div>🧪 <b>Medium‑jank (≤10 Total):</b> ${r.tierCounts.med}</div>
         <div>🔥 <b>Light‑jank (≤20 Total):</b> ${r.tierCounts.light}</div>
@@ -858,7 +857,7 @@ SIDEBOARD:
         <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div>
         <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +12)</div>
         <div>🧱 <b>Staples (≥350) neutralized:</b> ${r.staplesNeutralizedCount} (0 pts each)</div>
-        <div>✨ <b>Ultra-jank bonuses${r.includeSide ? ' (incl. SB)' : ''}:</b> +${r.lowPlayBonusPts.toFixed(2)} (≤1×${r.lowPlayCounts.ultra}, ≤4×${r.lowPlayCounts.deep}, ≤10×${r.lowPlayCounts.medium}, ≤20×${r.lowPlayCounts.light}, ≤25×${r.lowPlayCounts.ultralight})</div>
+        <div>✨ <b>${r.includeSide ? ' (incl. SB)' : ''}:</b> +${r.lowPlayBonusPts.toFixed(2)} (≤1×${r.lowPlayCounts.ultra}, ≤4×${r.lowPlayCounts.deep}, ≤10×${r.lowPlayCounts.medium}, ≤20×${r.lowPlayCounts.light}, ≤25×${r.lowPlayCounts.ultralight})</div>
         <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>
         <div>📦 <b>Cards above 60:</b> ${r.over60} (+${r.over60Bonus.toFixed(2)})</div>`;
       top.innerHTML = '';
