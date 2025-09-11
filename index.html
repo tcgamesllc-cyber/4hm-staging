@@ -605,10 +605,37 @@ SIDEBOARD:
       const close = document.getElementById('releaseClose');
       if(!modal || !body || !open || !close) return;
       const notes = [
+        {title:'v1.10 — Density Cap Nudged (Sep 2025)', items:[
+          'Density bonus cap increased from +10 to +12 (still linear).',
+          'Targets: push very spicy decks into low 90s; keep 100 for absurd piles only.',
+        ]},
+
+        {title:'v1.9 — Per-Copy Scaling Adjusted (Sep 2025)', items:[
+          'Per-copy jank weight now scaled by /70.',
+          'This balances the curve: spicy decks can reach ~90, perfect 100s remain very rare.',
+        ]},
+
+        {title:'v1.8 — Per-Copy Scaling Tightened (Sep 2025)', items:[
+          'Per-copy jank weight scaled by /100 instead of /60.',
+          'Makes it much harder to reach 100, except for extreme jank builds.',
+          'Typical spicy decks will now score in the 70–90 range.',
+        ]},
+
+        {title:'v1.7 — Density Bonus Tightened (Sep 2025)', items:[
+          'Density bonus cap reduced from +15 to +10.',
+          'Linear scaling remains: +10 * (deepDensity / 100).',
+          'This ensures max scores are harder to reach.',
+        ]},
+
+        {title:'v1.6 — Density Bonus Linearized (Sep 2025)', items:[
+          'Density bonus now scales linearly: +15 * (deepDensity / 100).',
+          'This makes 100% density = +15, 50% density = +7.5, and prevents inflated scores.',
+        ]},
+
         {title:'v1.5 — Jank Bonus Adjustments (Sep 2025)', items:[
-          'Ultra‑jank (≤1) bonuses removed from scoring.',
+          'Ultra‑jank (≤1) bonuses fully removed from scoring and badges.',
           'Density bonus reduced to max +15 (was +25).',
-          'UI updated to reflect new caps and bonus removals.'
+          'UI updated accordingly.'
         ]},
 
         {title:'v1.4 — Land‑neutral & Neutral Staples (Sep 2025)', items:[
@@ -655,7 +682,7 @@ SIDEBOARD:
 
     function renderTable(threshold, setFilter){
       const rows = allRows.filter(r => r.total <= threshold && (!setFilter || r.set === setFilter) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
-      rows.forEach(r => { r.jankValue = (BASIC_SET.has(r.key) || DUELS_SET.has(r.key) || r.total >= OVERPLAYED_THRESHOLD) ? 0 : Number((jankWeight(r.total)/60).toFixed(2)); });
+      rows.forEach(r => { r.jankValue = (BASIC_SET.has(r.key) || DUELS_SET.has(r.key) || r.total >= OVERPLAYED_THRESHOLD) ? 0 : Number((jankWeight(r.total)/70).toFixed(2)); });
       const data = rows.map(r => {
         const isBan = BANNED.has(r.key) || HARD_BANNED.has(r.key);
         const isRes = RESTRICTED.has(r.key);
@@ -692,7 +719,7 @@ SIDEBOARD:
       const set = document.getElementById('setFilter').value || '';
       const rows = allRows.filter(r => r.total <= v && (!set || r.set === set) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
       const header = ['Set','Card','Main Deck','Sideboard','Total','Jank Pts (per copy)'];
-      const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total, ((BASIC_SET.has(r.key) || DUELS_SET.has(r.key) || r.total >= OVERPLAYED_THRESHOLD) ? '0' : (jankWeight(r.total)/60).toFixed(2))].join(',')));
+      const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total, ((BASIC_SET.has(r.key) || DUELS_SET.has(r.key) || r.total >= OVERPLAYED_THRESHOLD) ? '0' : (jankWeight(r.total)/70).toFixed(2))].join(',')));
       const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       const rtag = rarityState.size?`-rarity-${Array.from(rarityState).join('_')}`:'';
@@ -817,8 +844,8 @@ SIDEBOARD:
       const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: ((BASIC_SET.has(x.key) || DUELS_SET.has(x.key) || x.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
 
       // Tier counts (unique card names in main only)
-      const seen = new Set(); let ultra=0, deep=0, med=0, light=0, ultralight=0;
-      for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_ULTRA) ultra++; else if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; else if(t<=THRESH_ULTRALIGHT) ultralight++; }
+      const seen = new Set(); let deep=0, med=0, light=0, ultralight=0;
+      for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; else if(t<=THRESH_ULTRALIGHT) ultralight++; }
 
       return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light,ultralight}, copiesMain, over60, over60Bonus, staplesNeutralizedCount, lowPlayBonusPts, lowPlayCounts, includeSide };
     }
@@ -848,7 +875,7 @@ SIDEBOARD:
         <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>
         <div>📦 <b>Cards above 60:</b> ${r.over60} (+${r.over60Bonus.toFixed(2)})</div>`;
       top.innerHTML = '';
-      for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `<a href=\"#\" class=\"cardlink\" data-key=\"${t.key}\">${t.name}</a>${badge?`<span class=\\\"tag\\\"> ${badge}</span>`:''} <span class=\"small mono\">(${(t.w/60).toFixed(2)} pts/copy)</span>`; top.appendChild(li); }
+      for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `<a href=\"#\" class=\"cardlink\" data-key=\"${t.key}\">${t.name}</a>${badge?`<span class=\\\"tag\\\"> ${badge}</span>`:''} <span class=\"small mono\">(${(t.w/70).toFixed(2)} pts/copy)</span>`; top.appendChild(li); }
     }
 
     function validateDeck(parsed){
