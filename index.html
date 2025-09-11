@@ -605,6 +605,26 @@ SIDEBOARD:
       const close = document.getElementById('releaseClose');
       if(!modal || !body || !open || !close) return;
       const notes = [
+        {title:'v1.14 — SB Quarter Weight & Linear Density (Sep 2025)', items:[
+          'Sideboard now counts 25% toward denominator and density.',
+          'Density bonus is linear (max +12) with a safety guard.',
+        ]},
+
+        {title:'v1.13 — Sideboard Weighting (Sep 2025)', items:[
+          'Sideboard now counts 50% toward denominator and density.',
+          'Prevents sideboard from artificially inflating scores, while still rewarding spicy boards.',
+        ]},
+
+        {title:'v1.12 — Dynamic Deck Size Scaling (Sep 2025)', items:[
+          'Per-copy jank weight now scaled by total deck size (main + sideboard).',
+          'Prevents inflated scores when sideboards are included.',
+          '100 remains the hard cap for the jankiest possible piles.',
+        ]},
+
+        {title:'v1.11 — Density Bonus Guard (Sep 2025)', items:[
+          'Added safety check for density bonus calculation to prevent analysis errors.',
+        ]},
+
         {title:'v1.10 — Density Cap Nudged (Sep 2025)', items:[
           'Density bonus cap increased from +10 to +12 (still linear).',
           'Targets: push very spicy decks into low 90s; keep 100 for absurd piles only.',
@@ -790,14 +810,17 @@ SIDEBOARD:
     function tierOf(total){ if (total <= THRESH_ULTRA) return 'Ultra‑Jank'; if (total <= THRESH_DEEP) return 'Deep Jank'; if (total <= THRESH_MED) return 'Medium Jank'; if (total <= THRESH_LIGHT) return 'Light Jank'; if (total <= THRESH_ULTRALIGHT) return 'Ultralight Jank'; return ''; }
 
     function scoreDeck(parsed, includeSide){
+      const SB_WEIGHT = 0.25; // sideboard counts quarter toward denominator/density
       const toRow = new Map(); const nameMap = new Map();
       for(const r of allRows){ const k = normName(r.card); if(!nameMap.has(k)) nameMap.set(k, r.card); if(!toRow.has(k)) toRow.set(k, r); }
       function mapToArr(m){ return Array.from(m.entries()).map(([key,count])=>({key, count})); }
       const mainArr = mapToArr(parsed.main); const sideArr = mapToArr(parsed.side);
 
       const matchedMain = []; const matchedSide = []; const unmatched = [];
+      let copiesSide = 0;
+
       for(const item of mainArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Main: ${item.count} × ${item.key}`); continue; } matchedMain.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
-      for(const item of sideArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Side: ${item.count} × ${item.key}`); continue; } matchedSide.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
+      for(const item of sideArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Side: ${item.count} × ${item.key}`); continue; } copiesSide += item.count; matchedSide.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
 
       // Jank score (basics/duals/staples ≥350 contribute 0 raw weight)
       const logMax = Math.log(Math.max(1,MAX_TOTAL) + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
@@ -806,9 +829,13 @@ SIDEBOARD:
 
       // Land‑neutral denominator: only MAIN non‑land copies define the scale
       const nonLandMain = matchedMain.reduce((a,m)=> a + (isLandKey(m.key)?0:m.count), 0);
-      const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
-      const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
-      const rawMax = Math.max(1, nonLandMain) * 100; // sideboard NOT in denominator to avoid dilution
+      const sbNonLand = includeSide ? matchedSide.reduce((a,m)=> a + (isLandKey(m.key)?0:m.count), 0) : 0;
+      const effectiveNonLand = Math.max(1, nonLandMain + Math.round(sbNonLand * SB_WEIGHT));
+      const deepCopiesMain = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
+      const deepCopiesSide = includeSide ? matchedSide.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0) : 0;
+      const effectiveDeepCopies = deepCopiesMain + Math.round(deepCopiesSide * SB_WEIGHT);
+      const deepDensity = Math.round(100 * effectiveDeepCopies / effectiveNonLand);
+      const rawMax = effectiveNonLand * 100; // sideboard weighted in denominator to avoid inflation
       const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
 
       // Per‑copy adjustments
@@ -834,7 +861,7 @@ SIDEBOARD:
         else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += 0.13 * m.count; lowPlayCounts.ultralight += m.count; }
       }
 
-      const bonus = Math.round(15 * Math.pow(deepDensity / 100, 1.1));
+      const bonus = deepDensity ? Math.round(12 * (deepDensity / 100)) : 0;
       const over60 = Math.max(0, copiesMain - 60);
       const over60Bonus = over60 * 0.25;
       const adjustedBase = baseScore + lowPlayBonusPts;
