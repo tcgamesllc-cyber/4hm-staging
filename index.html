@@ -776,7 +776,8 @@ SIDEBOARD:
       const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
       const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
       const rawMax = Math.max(1, nonLandMain) * 100; // sideboard NOT in denominator to avoid dilution
-      const baseScore = Math.min(85, Math.max(0, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
+      const baseScoreRaw = ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100;
+const baseScore = Math.min(85, Math.max(0, baseScoreRaw));
 
       // Per‑copy adjustments
       //  • Staples (≥350) are neutral — tracked for a badge only
