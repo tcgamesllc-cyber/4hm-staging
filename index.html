@@ -452,7 +452,7 @@ SIDEBOARD:
     }catch(e){ console.error(e); showErr(e?.message||e); resolve([]); }
   });
 }
-function typeHas(t, word){ return new RegExp(`(?:^|,|\s)${word}(?:,|\s|$)`, 'i').test(t||''); }(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i').test(t||''); }
+function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i').test(t||''); }
     function isLegendaryCard(row){ return String(row.supertypes||'').toLowerCase().includes('legendary'); }
     function isLegendaryCreature(row){ return isLegendaryCard(row) && typeHas(String(row.types),'creature'); }
     function parseColorsFromRow(r){ const out=new Set(); let cols=r.colors||r.colorIdentity||r.colours||''; if(cols){ String(cols).split(/[\s,;]+/).forEach(tok=>{ const c=String(tok).trim().toUpperCase(); if(/^[WUBRG]$/.test(c)) out.add(c); }); } if(!out.size && r.manaCost){ const m=String(r.manaCost); if(/{W}/i.test(m)) out.add('W'); if(/{U}/i.test(m)) out.add('U'); if(/{B}/i.test(m)) out.add('B'); if(/{R}/i.test(m)) out.add('R'); if(/{G}/i.test(m)) out.add('G'); } return out; }
