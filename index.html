@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -86,39 +85,29 @@
     .num-input { width:82px; background:#fff9e6; color:#2b1a08; border:1px solid #c8a96c; border-radius:8px; padding:6px 8px; }
 
     @media (max-width: 640px) {
-      /* Make filter pills stack and wrap internally */
       .controls { gap: 8px; }
       .row { flex-direction: column; gap: 8px; max-width:100%; }
       .pill { width:100%; min-width:0; flex-wrap:wrap; }
       .pill label { margin-right:8px; }
-      /* Quick presets wrap */
       #quickPresets { width:100%; display:flex; flex-wrap:wrap; }
       #quickPresets .btn-mini { margin:2px 4px; flex:1 1 64px; }
-      /* Inputs/selects go full width when needed */
       .pill select, .pill input[type="text"], .pill input[type="number"] { width:100%; }
       #setFilter { width:100%; }
       #nameSearch { width:100%; }
-      /* Slider and number stack nicely */
       #threshold { width:100%; flex:1 1 100%; min-width:160px; }
       #thresholdNumber { width:72px; }
       body { border-width: 16px; }
       header h1 { font-size: 24px; }
       header .sub { font-size: 13px; }
-
       .wrap { padding: 0 8px; overflow-x:hidden; }
       .panel { border-radius: 12px; padding: 12px; }
-
-      /* stack the filters, full width pills */
       .row { flex-wrap: wrap; flex-direction: row; gap:10px; overflow-x:visible; }
       .pill { padding: 8px 10px; width:100%; min-width:0; border-radius:12px; }
-
       input[type="range"] { width: 100%; }
       #thresholdNumber { width: 72px; }
-
       table.dataTable { border-width: 1px; }
       table.dataTable thead th { font-size: 14px; }
       table.dataTable tbody td { font-size: 14px; }
-
       .modal-card { max-height: 80vh; overflow:auto; }
       .search-input { width: 100%; }
       .actions { width:100%; justify-content:flex-start; }
@@ -126,17 +115,20 @@
   </style>
 </head>
 <body>
-<div id="stagingBanner">
-  🚧 STAGING VERSION — Not for Production Use 🚧 | 
-  <a href="https://tcgamesllc-cyber.github.io/4hm/" target="_blank">
-    Go to Production Site →
-  </a>
+  <div id="stagingBanner">
+  🚧 STAGING VERSION — Not for Production Use 🚧
 </div>
 
 <style>
   #stagingBanner {
-    background: #b00;       /* deep red */
-    color: #fff;
+    background: repeating-linear-gradient(
+      45deg,
+      #b00,
+      #b00 10px,
+      #ff0 10px,
+      #ff0 20px
+    );
+    color: black;
     text-align: center;
     font-weight: bold;
     font-size: 20px;
@@ -145,36 +137,24 @@
     top: 0;
     z-index: 2000;
     border-bottom: 3px solid #000;
-    letter-spacing: 1px;
-  }
-  #stagingBanner a {
-    color: #ff0;            /* yellow link for contrast */
-    text-decoration: underline;
-    margin-left: 6px;
-  }
-  #stagingBanner a:hover {
-    color: #fff;
-    text-decoration: none;
   }
 </style>
 
-
-
   <header>
     <h1>⚡ 4HM Jank‑O‑Meter ⚡</h1>
-    <div class="sub">Filter rarely‑played cards, score your deck’s Jank, and validate 4HM legality with the current rules.</div>
+    <div class="sub">Filter rarely‑played cards, score your deck's Jank, and validate 4HM legality with the current rules.</div>
   </header>
 
   <div class="wrap">
     <div class="panel" style="background:#fff9e6; border:2px solid #c8a96c;">
-      <h3 style="margin-top:12px;">🔎 Quick How‑To</h3>
+      <h3 style="margin-top:12px;">🔍 Quick How‑To</h3>
       <ul class="small">
         <li><b>Filters:</b> Narrow cards by set, color, type, rarity, mana value, and/or jank threshold.
           (The threshold value represents the maximum number of times a card has appeared in all decks in all prior 4HM tournaments as of T22.)</li>
         <li><b>Deck Scoring:</b> Paste your deck to get a <i>Jank Score</i>. Click cards anywhere (table or lists) to open the details modal.</li>
       </ul>
       <h3 style="margin-top:12px;">📚 Learn More & Community</h3>
-      <p>Four Horsemen (4HM) is a unique Old School Magic format using only cards from <b>Arabian Nights, Antiquities, Legends, The Dark</b>, the five basic lands, and ABUR duals. It’s an unsolved format where forgotten cards and wild brews shine.</p>
+      <p>Four Horsemen (4HM) is a unique Old School Magic format using only cards from <b>Arabian Nights, Antiquities, Legends, The Dark</b>, the five basic lands, and ABUR duals. It's an unsolved format where forgotten cards and wild brews shine.</p>
       <p class="small">
         • <a href="https://www.fourhorsemenmagic.com/current-tournament" target="_blank">Current 4HM Tournament</a><br/>
         • <a href="https://bit.ly/4HMRULES" target="_blank">Official 4HM Rules</a><br/>
@@ -182,7 +162,6 @@
       </p>
     </div>
   </div>
-
   <div class="wrap">
     <div class="panel">
       <div class="sticky-controls controls">
@@ -334,7 +313,7 @@ SIDEBOARD:
           <div id="valStatus" class="small">—</div>
           <ul id="valErrors" class="errlist"></ul>
           <div id="valCounts" class="small"></div>
-          <div class="small">Special limits: <b>6+ CMC Legendary Creatures</b> — max <b>2 unique</b>. <b>5 CMC Legendary Creatures</b> — max <b>1 unique</b>. Legendary Creatures do <i>not</i> count toward the “4 rarely‑played” requirement.</div>
+          <div class="small">Special limits: <b>6+ CMC Legendary Creatures</b> — max <b>2 unique</b>. <b>5 CMC Legendary Creatures</b> — max <b>1 unique</b>. Legendary Creatures do <i>not</i> count toward the "4 rarely‑played" requirement.</div>
         </div>
       </div>
     </div>
@@ -381,7 +360,6 @@ SIDEBOARD:
       <div class="small" id="releaseNotesBody"></div>
     </div>
   </div>
-
   <script>
     // === CONFIG ===
     const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv";
@@ -431,28 +409,8 @@ SIDEBOARD:
         .toLowerCase()
         .replace(/[^a-z0-9]/g,'');
     }
-    
-    function parseCSV(url){
-  return new Promise((resolve) => {
-    try{
-      const bust = (url.indexOf('?')>-1? '&' : '?') + 't=' + Date.now();
-      const u = url + bust;
-      if(typeof Papa==='undefined'){ showErr('Papa.parse not loaded'); return resolve([]); }
-      Papa.parse(u, {
-        download: true,
-        header: true,
-        skipEmptyLines: 'greedy',
-        complete: res => {
-          const rows = Array.isArray(res?.data) ? res.data : [];
-          if(!rows.length){ showErr('CSV returned 0 rows: ' + u); }
-          resolve(rows);
-        },
-        error: err => { console.error('CSV parse error', u, err); showErr(err?.message||err); resolve([]); }
-      });
-    }catch(e){ console.error(e); showErr(e?.message||e); resolve([]); }
-  });
-}
-function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i').test(t||''); }
+    function parseCSV(url){ return new Promise((resolve, reject) => { Papa.parse(url, { download:true, header:true, skipEmptyLines:'greedy', complete: res => resolve(res.data || []), error: reject }); }); }
+    function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i').test(t||''); }
     function isLegendaryCard(row){ return String(row.supertypes||'').toLowerCase().includes('legendary'); }
     function isLegendaryCreature(row){ return isLegendaryCard(row) && typeHas(String(row.types),'creature'); }
     function parseColorsFromRow(r){ const out=new Set(); let cols=r.colors||r.colorIdentity||r.colours||''; if(cols){ String(cols).split(/[\s,;]+/).forEach(tok=>{ const c=String(tok).trim().toUpperCase(); if(/^[WUBRG]$/.test(c)) out.add(c); }); } if(!out.size && r.manaCost){ const m=String(r.manaCost); if(/{W}/i.test(m)) out.add('W'); if(/{U}/i.test(m)) out.add('U'); if(/{B}/i.test(m)) out.add('B'); if(/{R}/i.test(m)) out.add('R'); if(/{G}/i.test(m)) out.add('G'); } return out; }
@@ -475,18 +433,7 @@ function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i
       }catch(e){ showErr('Data load issue — try refresh. '+(e?.message||e)); console.error(e); }
     }
 
-    function showErr(msg){
-      const el = document.getElementById('err');
-      if(!el) return;
-      el.style.display = 'block';
-      el.style.padding = '10px';
-      el.style.margin = '10px 0';
-      el.style.border = '1px solid #f55';
-      el.style.background = '#2b0000';
-      el.style.color = '#ffb3b3';
-      el.style.borderRadius = '8px';
-      el.textContent = (msg && msg.message) ? msg.message : (typeof msg === 'string' ? msg : JSON.stringify(msg));
-    }
+    function showErr(msg){ const el = document.getElementById('err'); el.style.display='block'; el.textContent = (msg && msg.message) ? msg.message : (typeof msg === 'string' ? msg : JSON.stringify(msg)); }
 
     function ingestPool(rows){
       if(!rows?.length) return;
@@ -586,6 +533,7 @@ function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i
       document.getElementById('copyLinkBtn').addEventListener('click', copySharableLink);
       initFilterToggle();
     }
+
     function initFilterToggle(){
       const btn = document.getElementById('filtersToggleBtn');
       const filters = document.getElementById('filters');
@@ -636,10 +584,37 @@ function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i
       const close = document.getElementById('releaseClose');
       if(!modal || !body || !open || !close) return;
       const notes = [
-  {title:'Score calculation updated', items:[
-    'Jank score algorithm revised for fairness and clarity.'
-  ]}
-];
+        {title:'v1.5 — Recalibrated Scoring (Sep 2025)', items:[
+          'Major scoring revision to achieve realistic score ranges.',
+          'Target ranges: Spiky decks 20–30, Normal decks 30–40, Spicy brews 50–70, True spice bombs 70–80+.',
+          'Compressed base score contribution by 70% (multiplied by 0.30).',
+          'Reduced per-card bonuses by ~85%: Ultra-jank now +0.15 (was +1.00), Deep-jank +0.08 (was +0.75).',
+          'Steepened density curve significantly: 12 × density³ (was 25 × density^1.1).',
+          'Reduced over-60 bonus from +0.25 to +0.05 per card.'
+        ]},
+        {title:'v1.4 — Land‑neutral & Neutral Staples (Sep 2025)', items:[
+          'Base score now ignores lands; basics & ABUR duals remain 0 pts.',
+          'Staples (4HM Total ≥ 350) are neutral: 0 pts, no penalties.',
+          'Sideboard, when included, adds bonuses but never dilutes the denominator.',
+          'Over‑60 bonus retained (+0.25 per main‑deck card above 60).',
+          'Badges show Ultra‑jank bonuses, Staples neutralized count, and Cards above 60.',
+          'Improved file loader and "SB:" per‑line parsing.'
+        ]},
+        {title:'v1.3 — Over‑60 bonus & Mobile filters', items:[
+          '+0.25 per card above 60 and "Cards above 60" badge.',
+          'Mobile hamburger; Threshold & Quick stay visible.',
+          'Top‑10 Jankiest links to modal.',
+          'Per‑card Jank pts shown as decimals.'
+        ]},
+        {title:'v1.2 — Ultralight ≤25 & validation', items:[
+          'Added Quick ≤25 and Ultralight Jank badge.',
+          'Validator: 4 rarely‑played non‑legendary creature threshold raised to ≤25.',
+          'Ignored "Mainboard" token in deck imports.'
+        ]},
+        {title:'v1.1 — Salt removed', items:[
+          'Removed saltiness column and Top‑10 saltiest.'
+        ]}
+      ];
       body.innerHTML = notes.map(n => `<h4 style="margin:8px 0 4px 0;">${n.title}</h4><ul style="margin:4px 0 10px 20px;">${n.items.map(i=>`<li>${i}</li>`).join('')}</ul>`).join('');
       open.addEventListener('click', (e)=>{ e.preventDefault(); modal.classList.add('open'); });
       close.addEventListener('click', ()=> modal.classList.remove('open'));
@@ -661,7 +636,7 @@ function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i
 
     function renderTable(threshold, setFilter){
       const rows = allRows.filter(r => r.total <= threshold && (!setFilter || r.set === setFilter) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
-      rows.forEach(r => { r.jankValue = (BASIC_SET.has(r.key) || DUELS_SET.has(r.key) || r.total >= OVERPLAYED_THRESHOLD) ? 0 : Number((jankWeight(r.total)/70).toFixed(2)); });
+      rows.forEach(r => { r.jankValue = (BASIC_SET.has(r.key) || DUELS_SET.has(r.key) || r.total >= OVERPLAYED_THRESHOLD) ? 0 : Number((jankWeight(r.total)/60).toFixed(2)); });
       const data = rows.map(r => {
         const isBan = BANNED.has(r.key) || HARD_BANNED.has(r.key);
         const isRes = RESTRICTED.has(r.key);
@@ -698,7 +673,7 @@ function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i
       const set = document.getElementById('setFilter').value || '';
       const rows = allRows.filter(r => r.total <= v && (!set || r.set === set) && passesColorFilter(r) && passesTypeFilter(r) && passesSuperFilter(r) && passesRarityFilter(r) && passesManaFilter(r) && passesNameSearch(r));
       const header = ['Set','Card','Main Deck','Sideboard','Total','Jank Pts (per copy)'];
-      const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total, ((BASIC_SET.has(r.key) || DUELS_SET.has(r.key) || r.total >= OVERPLAYED_THRESHOLD) ? '0' : (jankWeight(r.total)/70).toFixed(2))].join(',')));
+      const lines = [header.join(',')].concat(rows.map(r => [r.set, r.card, r.main, r.side, r.total, ((BASIC_SET.has(r.key) || DUELS_SET.has(r.key) || r.total >= OVERPLAYED_THRESHOLD) ? '0' : (jankWeight(r.total)/60).toFixed(2))].join(',')));
       const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       const rtag = rarityState.size?`-rarity-${Array.from(rarityState).join('_')}`:'';
@@ -768,99 +743,131 @@ function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i
 
     function tierOf(total){ if (total <= THRESH_ULTRA) return 'Ultra‑Jank'; if (total <= THRESH_DEEP) return 'Deep Jank'; if (total <= THRESH_MED) return 'Medium Jank'; if (total <= THRESH_LIGHT) return 'Light Jank'; if (total <= THRESH_ULTRALIGHT) return 'Ultralight Jank'; return ''; }
 
+    // REVISED SCORING FUNCTION
     function scoreDeck(parsed, includeSide){
-      const SB_WEIGHT = 0.25; // sideboard counts quarter toward denominator/density
       const toRow = new Map(); const nameMap = new Map();
       for(const r of allRows){ const k = normName(r.card); if(!nameMap.has(k)) nameMap.set(k, r.card); if(!toRow.has(k)) toRow.set(k, r); }
       function mapToArr(m){ return Array.from(m.entries()).map(([key,count])=>({key, count})); }
       const mainArr = mapToArr(parsed.main); const sideArr = mapToArr(parsed.side);
 
       const matchedMain = []; const matchedSide = []; const unmatched = [];
-      let copiesSide = 0;
-
       for(const item of mainArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Main: ${item.count} × ${item.key}`); continue; } matchedMain.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
-      for(const item of sideArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Side: ${item.count} × ${item.key}`); continue; } copiesSide += item.count; matchedSide.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
+      for(const item of sideArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Side: ${item.count} × ${item.key}`); continue; } matchedSide.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
 
-      // Jank score (basics/duals/staples ≥350 contribute 0 raw weight)
-      const logMax = Math.log(Math.max(1,MAX_TOTAL) + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
-      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; const w = ((BASIC_SET.has(m.key) || DUELS_SET.has(m.key) || m.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(m.total); raw += m.count * w; }
-      let rawSide = 0; if (includeSide){ for (const s of matchedSide){ const w = ((BASIC_SET.has(s.key) || DUELS_SET.has(s.key) || s.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(s.total); rawSide += s.count * w; }}
-
-      // Land‑neutral denominator: only MAIN non‑land copies define the scale
-      const nonLandMain = matchedMain.reduce((a,m)=> a + (isLandKey(m.key)?0:m.count), 0);
-      const sbNonLand = includeSide ? matchedSide.reduce((a,m)=> a + (isLandKey(m.key)?0:m.count), 0) : 0;
-      const effectiveNonLand = Math.max(1, nonLandMain + Math.round(sbNonLand * SB_WEIGHT));
-      const deepCopiesMain = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
-      const deepCopiesSide = includeSide ? matchedSide.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0) : 0;
-      const effectiveDeepCopies = deepCopiesMain + Math.round(deepCopiesSide * SB_WEIGHT);
-      const deepDensity = Math.round(100 * effectiveDeepCopies / effectiveNonLand);
-      const rawMax = effectiveNonLand * 100; // sideboard weighted in denominator to avoid inflation
-      const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
-
-      // Per‑copy adjustments
-      //  • Staples (≥350) are neutral — tracked for a badge only
-      //  •  = include SB if checked, else main only
-      let lowPlayBonusPts = 0; let lowPlayCounts = {ultra:0,deep:0,medium:0,light:0,ultralight:0};
-      let staplesNeutralizedCount = 0;
-
-      // Staples neutralization count (≥350, excluding basics/duals); no points added or removed
-      {
-        const arr = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
-        for (const m of arr){
-          const isBasic = BASIC_SET.has(m.key); const isDual = DUELS_SET.has(m.key);
-          if (!isBasic && !isDual && m.total >= OVERPLAYED_THRESHOLD) { staplesNeutralizedCount += m.count; }
+      // REVISED SCORING ALGORITHM
+      const logMax = Math.log(Math.max(1,MAX_TOTAL) + 1); 
+      const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
+      
+      let copiesMain = 0, raw = 0; 
+      for (const m of matchedMain){ 
+        copiesMain += m.count; 
+        const w = ((BASIC_SET.has(m.key) || DUELS_SET.has(m.key) || m.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(m.total); 
+        raw += m.count * w; 
+      }
+      
+      let rawSide = 0; 
+      if (includeSide){ 
+        for (const s of matchedSide){ 
+          const w = ((BASIC_SET.has(s.key) || DUELS_SET.has(s.key) || s.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(s.total); 
+          rawSide += s.count * w; 
         }
       }
-      // Bonuses — include SB if checked
-      const bonusArray = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
-      for (const m of bonusArray){
-        if (m.total <= THRESH_DEEP) { lowPlayBonusPts += 0.75 * m.count; lowPlayCounts.deep += m.count; }
-        else if (m.total <= THRESH_MED) { lowPlayBonusPts += 0.50 * m.count; lowPlayCounts.medium += m.count; }
-        else if (m.total <= THRESH_LIGHT) { lowPlayBonusPts += 0.25 * m.count; lowPlayCounts.light += m.count; }
-        else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += 0.13 * m.count; lowPlayCounts.ultralight += m.count; }
+
+      const nonLandMain = matchedMain.reduce((a,m)=> a + (isLandKey(m.key)?0:m.count), 0);
+      const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
+      const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
+      const rawMax = Math.max(1, nonLandMain) * 100;
+      const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
+
+      // COMPRESSED BASE SCORE (KEY CHANGE)
+      const compressedBase = baseScore * 0.30;
+
+      // REDUCED PER-CARD BONUSES (KEY CHANGE)
+      let lowPlayBonusPts = 0; 
+      let lowPlayCounts = {ultra:0,deep:0,medium:0,light:0,ultralight:0};
+      let staplesNeutralizedCount = 0;
+
+      const arr = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
+      for (const m of arr){
+        const isBasic = BASIC_SET.has(m.key); 
+        const isDual = DUELS_SET.has(m.key);
+        if (!isBasic && !isDual && m.total >= OVERPLAYED_THRESHOLD) { 
+          staplesNeutralizedCount += m.count; 
+        }
       }
 
-      const bonus = deepDensity ? Math.round(12 * (deepDensity / 100)) : 0;
+      const bonusArray = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
+      for (const m of bonusArray){
+        if (m.total <= THRESH_ULTRA) { lowPlayBonusPts += 0.15 * m.count; lowPlayCounts.ultra += m.count; }
+        else if (m.total <= THRESH_DEEP) { lowPlayBonusPts += 0.08 * m.count; lowPlayCounts.deep += m.count; }
+        else if (m.total <= THRESH_MED) { lowPlayBonusPts += 0.04 * m.count; lowPlayCounts.medium += m.count; }
+        else if (m.total <= THRESH_LIGHT) { lowPlayBonusPts += 0.02 * m.count; lowPlayCounts.light += m.count; }
+        else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += 0.01 * m.count; lowPlayCounts.ultralight += m.count; }
+      }
+
+      // STEEPER DENSITY CURVE (KEY CHANGE)
+      const densityBonus = Math.round(12 * Math.pow(deepDensity / 100, 3.0));
+      
       const over60 = Math.max(0, copiesMain - 60);
-      const over60Bonus = over60 * 0.25;
-      const adjustedBase = baseScore;
-      const finalScore = Math.max(0, Math.min(100, adjustedBase + bonus + over60Bonus));
+      const over60Bonus = over60 * 0.05; // REDUCED (was 0.25)
+      
+      // FINAL CALCULATION (KEY CHANGE)
+      const finalScore = Math.max(0, Math.min(100, 
+        compressedBase + lowPlayBonusPts + densityBonus + over60Bonus
+      ));
 
       // Top jankiest (by per‑copy weight), basics/duals/staples=0
-      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: ((BASIC_SET.has(x.key) || DUELS_SET.has(x.key) || x.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
+      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: ((BASIC_SET.has(x.key) || DUELS_SET.has(x.key) || x.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(x.total), total:x.total, count:x.count})); 
+      allForTop.sort((a,b)=> b.w - a.w); 
+      const top10 = allForTop.slice(0,10);
 
       // Tier counts (unique card names in main only)
-      const seen = new Set(); let deep=0, med=0, light=0, ultralight=0;
-      for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; else if(t<=THRESH_ULTRALIGHT) ultralight++; }
+      const seen = new Set(); let ultra=0, deep=0, med=0, light=0, ultralight=0;
+      for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_ULTRA) ultra++; else if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; else if(t<=THRESH_ULTRALIGHT) ultralight++; }
 
-      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{deep,med,light,ultralight}, copiesMain, over60, over60Bonus, staplesNeutralizedCount, lowPlayBonusPts, lowPlayCounts, includeSide };
+      return { 
+        score: Math.round(finalScore), 
+        baseScore: Math.round(compressedBase), 
+        densityBonus, 
+        deepDensity, 
+        top10, 
+        tierCounts:{ultra,deep,med,light,ultralight}, 
+        copiesMain, 
+        over60, 
+        over60Bonus, 
+        staplesNeutralizedCount, 
+        lowPlayBonusPts, 
+        lowPlayCounts, 
+        includeSide 
+      };
     }
 
     function renderDeckScore(r){
-      // Jank score
+      // Jank score with REVISED FLAVOR MESSAGES
       const scoreEl = document.getElementById('scoreValue'); const bar = document.getElementById('scoreBar'); const flavor = document.getElementById('scoreFlavor'); const badges = document.getElementById('badges'); const top = document.getElementById('topJank');
       scoreEl.textContent = r.score; bar.style.width = r.score + '%';
       let msg = '';
-      if (r.score >= 90) msg = '🧪 Maximum spice achieved — expect the unexpected.';
-      else if (r.score >= 70) msg = '🌋 The Jank is STRONG with this one.';
-      else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.';
+      if (r.score >= 75) msg = '🧪 Maximum spice achieved — expect the unexpected.';
+      else if (r.score >= 60) msg = '🌋 The Jank is STRONG with this one.';
+      else if (r.score >= 45) msg = '🌶️ Solidly spicy — a connoisseur's brew.';
       else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.';
       else msg = '🛡️ More staple than spice. Dare to jank harder?';
-      if (r.bonus >= 10) msg += ' 🧪 Dense spice pocket detected.';
+      if (r.densityBonus >= 8) msg += ' 🧪 Dense spice pocket detected.';
       flavor.textContent = msg;
       badges.innerHTML = `
-        <div>🧿 <b>Ultra (removed) Total):</b> 0</div>
+        <div>🧿 <b>Ultra‑jank (≤1 Total):</b> ${r.tierCounts.ultra}</div>
         <div>💀 <b>Deep‑jank (≤4 Total):</b> ${r.tierCounts.deep}</div>
         <div>🧪 <b>Medium‑jank (≤10 Total):</b> ${r.tierCounts.med}</div>
         <div>🔥 <b>Light‑jank (≤20 Total):</b> ${r.tierCounts.light}</div>
         <div>🧊 <b>Ultralight‑jank (≤25 Total):</b> ${r.tierCounts.ultralight}</div>
         <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div>
-        <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +12)</div>
+        <div>➕ <b>Density bonus added:</b> +${r.densityBonus} (max +12)</div>
         <div>🧱 <b>Staples (≥350) neutralized:</b> ${r.staplesNeutralizedCount} (0 pts each)</div>
+        <div>✨ <b>Ultra-jank bonuses${r.includeSide ? ' (incl. SB)' : ''}:</b> +${r.lowPlayBonusPts.toFixed(2)} (≤1×${r.lowPlayCounts.ultra}, ≤4×${r.lowPlayCounts.deep}, ≤10×${r.lowPlayCounts.medium}, ≤20×${r.lowPlayCounts.light}, ≤25×${r.lowPlayCounts.ultralight})</div>
         <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>
         <div>📦 <b>Cards above 60:</b> ${r.over60} (+${r.over60Bonus.toFixed(2)})</div>`;
       top.innerHTML = '';
-      for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `<a href=\"#\" class=\"cardlink\" data-key=\"${t.key}\">${t.name}</a>${badge?`<span class=\\\"tag\\\"> ${badge}</span>`:''} <span class=\"small mono\">(${(t.w/70).toFixed(2)} pts/copy)</span>`; top.appendChild(li); }
+      for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `<a href=\"#\" class=\"cardlink\" data-key=\"${t.key}\">${t.name}</a>${badge?`<span class=\"tag\"> ${badge}</span>`:''} <span class=\"small mono\">(${(t.w/60).toFixed(2)} pts/copy)</span>`; top.appendChild(li); }
     }
 
     function validateDeck(parsed){
@@ -884,7 +891,7 @@ function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i
       for(const [key,count] of totals.entries()){
         if (BASIC_SET.has(key)) continue;
         const row = LEGAL_CARDS.get(key);
-        if(!row){ errors.push(`Not in 4HM card pool: “${NAME_MAP.get(key)||key}”`); continue; }
+        if(!row){ errors.push(`Not in 4HM card pool: "${NAME_MAP.get(key)||key}"`); continue; }
         const disp = NAME_MAP.get(key) || String(row.name||row.card||key);
         if (HARD_BANNED.has(key) || BANNED.has(key)) errors.push(`BANNED card: ${disp}`);
         const isRestr = RESTRICTED.has(key) || String(row.supertypes||'').toLowerCase().includes('legendary') || typeHas(String(row.types),'enchantment');
