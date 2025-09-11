@@ -39,9 +39,7 @@
     .btn { background:#fff9e6; border:1px solid #c8a96c; border-radius:10px; padding:6px 10px; cursor:pointer; }
     .btn-mini { padding:4px 8px; font-size:13px; }
 
-    /* ensure action buttons wrap nicely on small screens */
     .actions { display:flex; flex-wrap:wrap; gap:6px; }
-    /* Mobile filter hamburger and collapse animation */
     .filters-bar { display:none; align-items:center; justify-content:space-between; margin-top:8px; }
     .sticky-controls { margin-bottom:8px; }
     #filters { max-height:2000px; overflow:hidden; transition:max-height .25s ease; }
@@ -162,7 +160,7 @@
       </p>
     </div>
   </div>
-  <div class="wrap">
+<div class="wrap">
     <div class="panel">
       <div class="sticky-controls controls">
         <div class="row">
@@ -326,8 +324,7 @@ SIDEBOARD:
       <p class="small"><a href="#" id="releaseNotesOpen">Release notes</a></p>
     </div>
   </div>
-
-  <div id="cardModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
+<div id="cardModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
     <div class="modal-card">
       <div class="modal-head">
         <div class="card-top" style="width:100%">
@@ -360,6 +357,7 @@ SIDEBOARD:
       <div class="small" id="releaseNotesBody"></div>
     </div>
   </div>
+
   <script>
     // === CONFIG ===
     const CARDPOOL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbTvT5tNT1w_Nqz1dL-t3muSuqzQ8UkO9ssHNZT1koEM8iVQQuY7QwGpTImtqv58zT837gLm8GZG84/pub?output=csv";
@@ -486,8 +484,7 @@ SIDEBOARD:
       const truthy = v => { const s = String(v||'').trim().toLowerCase(); return s && s!=='0' && s!=='false' && s!=='no' && s!=='n' && s!=='na'; };
       for(const r of rows){ const key = normName(r[nameKey]); if(!key) continue; if(bannedKey && truthy(r[bannedKey])) BANNED.add(key); if(restrictedKey && truthy(r[restrictedKey])) RESTRICTED.add(key); }
     }
-
-    function initUI(){
+function initUI(){
       const slider = document.getElementById('threshold');
       const box = document.getElementById('thresholdNumber');
       const label = document.getElementById('thresholdLabel');
@@ -683,8 +680,7 @@ SIDEBOARD:
 
     function updateQuery(max){ const url = new URL(location.href); if (max != null) url.searchParams.set('max', String(max)); history.replaceState(null, '', url); }
     async function copySharableLink(){ try { await navigator.clipboard.writeText(location.href); alert('Sharable link copied to clipboard!'); } catch(e){ alert('Copy failed. You can manually copy the URL.'); } }
-
-    // === MODAL ===
+// === MODAL ===
     function capWords(s){ return s ? String(s).split(/[\s,;]+/).filter(Boolean).map(x=>x.trim()).map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ') : ''; }
     function typeLineText(row){ const sup = capWords(row.supertypes||row.supersStr); const typ = capWords(row.types||row.typesStr); const sub = capWords(row.subtypes||row.subtypesStr); return `${[sup, typ].filter(Boolean).join(' ')}${sub? ' — '+sub : ''}` || '—'; }
     function showCardModal(row){
@@ -855,18 +851,18 @@ SIDEBOARD:
       if (r.densityBonus >= 8) msg += ' 🧪 Dense spice pocket detected.';
       flavor.textContent = msg;
       badges.innerHTML = [
-  '<div>🧿 <b>Ultra-jank (≤1 Total):</b> ' + r.tierCounts.ultra + '</div>',
-  '<div>💀 <b>Deep-jank (≤4 Total):</b> ' + r.tierCounts.deep + '</div>', 
-  '<div>🧪 <b>Medium-jank (≤10 Total):</b> ' + r.tierCounts.med + '</div>',
-  '<div>🔥 <b>Light-jank (≤20 Total):</b> ' + r.tierCounts.light + '</div>',
-  '<div>🧊 <b>Ultralight-jank (≤25 Total):</b> ' + r.tierCounts.ultralight + '</div>',
-  '<div>📈 <b>Jank Density:</b> ' + r.deepDensity + '% of maindeck</div>',
-  '<div>➕ <b>Density bonus added:</b> +' + r.densityBonus + ' (max +12)</div>',
-  '<div>🧱 <b>Staples (≥350) neutralized:</b> ' + r.staplesNeutralizedCount + ' (0 pts each)</div>',
-  '<div>✨ <b>Ultra-jank bonuses' + (r.includeSide ? ' (incl. SB)' : '') + ':</b> +' + r.lowPlayBonusPts.toFixed(2) + ' (≤1×' + r.lowPlayCounts.ultra + ', ≤4×' + r.lowPlayCounts.deep + ', ≤10×' + r.lowPlayCounts.medium + ', ≤20×' + r.lowPlayCounts.light + ', ≤25×' + r.lowPlayCounts.ultralight + ')</div>',
-  '<div>🧾 <b>Counted copies (main):</b> ' + r.copiesMain + '</div>',
-  '<div>📦 <b>Cards above 60:</b> ' + r.over60 + ' (+' + r.over60Bonus.toFixed(2) + ')</div>'
-].join('');
+        '<div>🧿 <b>Ultra-jank (≤1 Total):</b> ' + r.tierCounts.ultra + '</div>',
+        '<div>💀 <b>Deep-jank (≤4 Total):</b> ' + r.tierCounts.deep + '</div>', 
+        '<div>🧪 <b>Medium-jank (≤10 Total):</b> ' + r.tierCounts.med + '</div>',
+        '<div>🔥 <b>Light-jank (≤20 Total):</b> ' + r.tierCounts.light + '</div>',
+        '<div>🧊 <b>Ultralight-jank (≤25 Total):</b> ' + r.tierCounts.ultralight + '</div>',
+        '<div>📈 <b>Jank Density:</b> ' + r.deepDensity + '% of maindeck</div>',
+        '<div>➕ <b>Density bonus added:</b> +' + r.densityBonus + ' (max +12)</div>',
+        '<div>🧱 <b>Staples (≥350) neutralized:</b> ' + r.staplesNeutralizedCount + ' (0 pts each)</div>',
+        '<div>✨ <b>Ultra-jank bonuses' + (r.includeSide ? ' (incl. SB)' : '') + ':</b> +' + r.lowPlayBonusPts.toFixed(2) + ' (≤1×' + r.lowPlayCounts.ultra + ', ≤4×' + r.lowPlayCounts.deep + ', ≤10×' + r.lowPlayCounts.medium + ', ≤20×' + r.lowPlayCounts.light + ', ≤25×' + r.lowPlayCounts.ultralight + ')</div>',
+        '<div>🧾 <b>Counted copies (main):</b> ' + r.copiesMain + '</div>',
+        '<div>📦 <b>Cards above 60:</b> ' + r.over60 + ' (+' + r.over60Bonus.toFixed(2) + ')</div>'
+      ].join('');
       top.innerHTML = '';
       for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `<a href=\"#\" class=\"cardlink\" data-key=\"${t.key}\">${t.name}</a>${badge?`<span class=\"tag\"> ${badge}</span>`:''} <span class=\"small mono\">(${(t.w/60).toFixed(2)} pts/copy)</span>`; top.appendChild(li); }
     }
