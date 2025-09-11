@@ -854,18 +854,19 @@ SIDEBOARD:
       else msg = '🛡️ More staple than spice. Dare to jank harder?';
       if (r.densityBonus >= 8) msg += ' 🧪 Dense spice pocket detected.';
       flavor.textContent = msg;
-      badges.innerHTML = 
-  '<div>🧿 <b>Ultra‑jank (≤1 Total):</b> ' + r.tierCounts.ultra + '</div>' +
-  '<div>💀 <b>Deep‑jank (≤4 Total):</b> ' + r.tierCounts.deep + '</div>' +
-  '<div>🧪 <b>Medium‑jank (≤10 Total):</b> ' + r.tierCounts.med + '</div>' +
-  '<div>🔥 <b>Light‑jank (≤20 Total):</b> ' + r.tierCounts.light + '</div>' +
-  '<div>🧊 <b>Ultralight‑jank (≤25 Total):</b> ' + r.tierCounts.ultralight + '</div>' +
-  '<div>📈 <b>Jank Density:</b> ' + r.deepDensity + '% of maindeck</div>' +
-  '<div>➕ <b>Density bonus added:</b> +' + r.densityBonus + ' (max +12)</div>' +
-  '<div>🧱 <b>Staples (≥350) neutralized:</b> ' + r.staplesNeutralizedCount + ' (0 pts each)</div>' +
-  '<div>✨ <b>Ultra-jank bonuses' + (r.includeSide ? ' (incl. SB)' : '') + ':</b> +' + r.lowPlayBonusPts.toFixed(2) + ' (≤1×' + r.lowPlayCounts.ultra + ', ≤4×' + r.lowPlayCounts.deep + ', ≤10×' + r.lowPlayCounts.medium + ', ≤20×' + r.lowPlayCounts.light + ', ≤25×' + r.lowPlayCounts.ultralight + ')</div>' +
-  '<div>🧾 <b>Counted copies (main):</b> ' + r.copiesMain + '</div>' +
-  '<div>📦 <b>Cards above 60:</b> ' + r.over60 + ' (+' + r.over60Bonus.toFixed(2) + ')</div>';
+      badges.innerHTML = [
+  '<div>🧿 <b>Ultra-jank (≤1 Total):</b> ' + r.tierCounts.ultra + '</div>',
+  '<div>💀 <b>Deep-jank (≤4 Total):</b> ' + r.tierCounts.deep + '</div>', 
+  '<div>🧪 <b>Medium-jank (≤10 Total):</b> ' + r.tierCounts.med + '</div>',
+  '<div>🔥 <b>Light-jank (≤20 Total):</b> ' + r.tierCounts.light + '</div>',
+  '<div>🧊 <b>Ultralight-jank (≤25 Total):</b> ' + r.tierCounts.ultralight + '</div>',
+  '<div>📈 <b>Jank Density:</b> ' + r.deepDensity + '% of maindeck</div>',
+  '<div>➕ <b>Density bonus added:</b> +' + r.densityBonus + ' (max +12)</div>',
+  '<div>🧱 <b>Staples (≥350) neutralized:</b> ' + r.staplesNeutralizedCount + ' (0 pts each)</div>',
+  '<div>✨ <b>Ultra-jank bonuses' + (r.includeSide ? ' (incl. SB)' : '') + ':</b> +' + r.lowPlayBonusPts.toFixed(2) + ' (≤1×' + r.lowPlayCounts.ultra + ', ≤4×' + r.lowPlayCounts.deep + ', ≤10×' + r.lowPlayCounts.medium + ', ≤20×' + r.lowPlayCounts.light + ', ≤25×' + r.lowPlayCounts.ultralight + ')</div>',
+  '<div>🧾 <b>Counted copies (main):</b> ' + r.copiesMain + '</div>',
+  '<div>📦 <b>Cards above 60:</b> ' + r.over60 + ' (+' + r.over60Bonus.toFixed(2) + ')</div>'
+].join('');
       top.innerHTML = '';
       for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `<a href=\"#\" class=\"cardlink\" data-key=\"${t.key}\">${t.name}</a>${badge?`<span class=\"tag\"> ${badge}</span>`:''} <span class=\"small mono\">(${(t.w/60).toFixed(2)} pts/copy)</span>`; top.appendChild(li); }
     }
