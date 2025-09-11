@@ -605,6 +605,12 @@ SIDEBOARD:
       const close = document.getElementById('releaseClose');
       if(!modal || !body || !open || !close) return;
       const notes = [
+        {title:'v1.5 — Jank Bonus Adjustments (Sep 2025)', items:[
+          'Ultra‑jank (≤1) bonuses removed from scoring.',
+          'Density bonus reduced to max +15 (was +25).',
+          'UI updated to reflect new caps and bonus removals.'
+        ]},
+
         {title:'v1.4 — Land‑neutral & Neutral Staples (Sep 2025)', items:[
           'Base score now ignores lands; basics & ABUR duals remain 0 pts.',
           'Staples (4HM Total ≥ 350) are neutral: 0 pts, no penalties.',
@@ -795,8 +801,7 @@ SIDEBOARD:
       // Bonuses — include SB if checked
       const bonusArray = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
       for (const m of bonusArray){
-        // Ultra-jank bonus removed
-        else if (m.total <= THRESH_DEEP) { lowPlayBonusPts += 0.75 * m.count; lowPlayCounts.deep += m.count; }
+        if (m.total <= THRESH_DEEP) { lowPlayBonusPts += 0.75 * m.count; lowPlayCounts.deep += m.count; }
         else if (m.total <= THRESH_MED) { lowPlayBonusPts += 0.50 * m.count; lowPlayCounts.medium += m.count; }
         else if (m.total <= THRESH_LIGHT) { lowPlayBonusPts += 0.25 * m.count; lowPlayCounts.light += m.count; }
         else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += 0.13 * m.count; lowPlayCounts.ultralight += m.count; }
