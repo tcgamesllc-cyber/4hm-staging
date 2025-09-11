@@ -39,7 +39,9 @@
     .btn { background:#fff9e6; border:1px solid #c8a96c; border-radius:10px; padding:6px 10px; cursor:pointer; }
     .btn-mini { padding:4px 8px; font-size:13px; }
 
+    /* ensure action buttons wrap nicely on small screens */
     .actions { display:flex; flex-wrap:wrap; gap:6px; }
+    /* Mobile filter hamburger and collapse animation */
     .filters-bar { display:none; align-items:center; justify-content:space-between; margin-top:8px; }
     .sticky-controls { margin-bottom:8px; }
     #filters { max-height:2000px; overflow:hidden; transition:max-height .25s ease; }
@@ -83,29 +85,39 @@
     .num-input { width:82px; background:#fff9e6; color:#2b1a08; border:1px solid #c8a96c; border-radius:8px; padding:6px 8px; }
 
     @media (max-width: 640px) {
+      /* Make filter pills stack and wrap internally */
       .controls { gap: 8px; }
       .row { flex-direction: column; gap: 8px; max-width:100%; }
       .pill { width:100%; min-width:0; flex-wrap:wrap; }
       .pill label { margin-right:8px; }
+      /* Quick presets wrap */
       #quickPresets { width:100%; display:flex; flex-wrap:wrap; }
       #quickPresets .btn-mini { margin:2px 4px; flex:1 1 64px; }
+      /* Inputs/selects go full width when needed */
       .pill select, .pill input[type="text"], .pill input[type="number"] { width:100%; }
       #setFilter { width:100%; }
       #nameSearch { width:100%; }
+      /* Slider and number stack nicely */
       #threshold { width:100%; flex:1 1 100%; min-width:160px; }
       #thresholdNumber { width:72px; }
       body { border-width: 16px; }
       header h1 { font-size: 24px; }
       header .sub { font-size: 13px; }
+
       .wrap { padding: 0 8px; overflow-x:hidden; }
       .panel { border-radius: 12px; padding: 12px; }
+
+      /* stack the filters, full width pills */
       .row { flex-wrap: wrap; flex-direction: row; gap:10px; overflow-x:visible; }
       .pill { padding: 8px 10px; width:100%; min-width:0; border-radius:12px; }
+
       input[type="range"] { width: 100%; }
       #thresholdNumber { width: 72px; }
+
       table.dataTable { border-width: 1px; }
       table.dataTable thead th { font-size: 14px; }
       table.dataTable tbody td { font-size: 14px; }
+
       .modal-card { max-height: 80vh; overflow:auto; }
       .search-input { width: 100%; }
       .actions { width:100%; justify-content:flex-start; }
@@ -113,20 +125,17 @@
   </style>
 </head>
 <body>
-  <div id="stagingBanner">
-  🚧 STAGING VERSION — Not for Production Use 🚧
+<div id="stagingBanner">
+  🚧 STAGING VERSION — Not for Production Use 🚧 | 
+  <a href="https://tcgamesllc-cyber.github.io/4hm/" target="_blank">
+    Go to Production Site →
+  </a>
 </div>
 
 <style>
   #stagingBanner {
-    background: repeating-linear-gradient(
-      45deg,
-      #b00,
-      #b00 10px,
-      #ff0 10px,
-      #ff0 20px
-    );
-    color: black;
+    background: #b00;       /* deep red */
+    color: #fff;
     text-align: center;
     font-weight: bold;
     font-size: 20px;
@@ -135,24 +144,36 @@
     top: 0;
     z-index: 2000;
     border-bottom: 3px solid #000;
+    letter-spacing: 1px;
+  }
+  #stagingBanner a {
+    color: #ff0;            /* yellow link for contrast */
+    text-decoration: underline;
+    margin-left: 6px;
+  }
+  #stagingBanner a:hover {
+    color: #fff;
+    text-decoration: none;
   }
 </style>
 
+
+
   <header>
     <h1>⚡ 4HM Jank‑O‑Meter ⚡</h1>
-    <div class="sub">Filter rarely‑played cards, score your deck's Jank, and validate 4HM legality with the current rules.</div>
+    <div class="sub">Filter rarely‑played cards, score your deck’s Jank, and validate 4HM legality with the current rules.</div>
   </header>
 
   <div class="wrap">
     <div class="panel" style="background:#fff9e6; border:2px solid #c8a96c;">
-      <h3 style="margin-top:12px;">🔍 Quick How‑To</h3>
+      <h3 style="margin-top:12px;">🔎 Quick How‑To</h3>
       <ul class="small">
         <li><b>Filters:</b> Narrow cards by set, color, type, rarity, mana value, and/or jank threshold.
           (The threshold value represents the maximum number of times a card has appeared in all decks in all prior 4HM tournaments as of T22.)</li>
         <li><b>Deck Scoring:</b> Paste your deck to get a <i>Jank Score</i>. Click cards anywhere (table or lists) to open the details modal.</li>
       </ul>
       <h3 style="margin-top:12px;">📚 Learn More & Community</h3>
-      <p>Four Horsemen (4HM) is a unique Old School Magic format using only cards from <b>Arabian Nights, Antiquities, Legends, The Dark</b>, the five basic lands, and ABUR duals. It's an unsolved format where forgotten cards and wild brews shine.</p>
+      <p>Four Horsemen (4HM) is a unique Old School Magic format using only cards from <b>Arabian Nights, Antiquities, Legends, The Dark</b>, the five basic lands, and ABUR duals. It’s an unsolved format where forgotten cards and wild brews shine.</p>
       <p class="small">
         • <a href="https://www.fourhorsemenmagic.com/current-tournament" target="_blank">Current 4HM Tournament</a><br/>
         • <a href="https://bit.ly/4HMRULES" target="_blank">Official 4HM Rules</a><br/>
@@ -160,7 +181,8 @@
       </p>
     </div>
   </div>
-<div class="wrap">
+
+  <div class="wrap">
     <div class="panel">
       <div class="sticky-controls controls">
         <div class="row">
@@ -311,7 +333,7 @@ SIDEBOARD:
           <div id="valStatus" class="small">—</div>
           <ul id="valErrors" class="errlist"></ul>
           <div id="valCounts" class="small"></div>
-          <div class="small">Special limits: <b>6+ CMC Legendary Creatures</b> — max <b>2 unique</b>. <b>5 CMC Legendary Creatures</b> — max <b>1 unique</b>. Legendary Creatures do <i>not</i> count toward the "4 rarely‑played" requirement.</div>
+          <div class="small">Special limits: <b>6+ CMC Legendary Creatures</b> — max <b>2 unique</b>. <b>5 CMC Legendary Creatures</b> — max <b>1 unique</b>. Legendary Creatures do <i>not</i> count toward the “4 rarely‑played” requirement.</div>
         </div>
       </div>
     </div>
@@ -324,7 +346,8 @@ SIDEBOARD:
       <p class="small"><a href="#" id="releaseNotesOpen">Release notes</a></p>
     </div>
   </div>
-<div id="cardModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
+
+  <div id="cardModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
     <div class="modal-card">
       <div class="modal-head">
         <div class="card-top" style="width:100%">
@@ -420,57 +443,16 @@ SIDEBOARD:
     window.addEventListener('DOMContentLoaded', () => { try { bindDeckTools(); } catch(e){ console.error(e); } boot(); initReleaseNotes(); });
 
     async function boot(){
-  try{
-    console.log('Starting data load...');
-    
-    // Test CSV URLs individually
-    console.log('Fetching cardpool data...');
-    const pool = await parseCSV(CARDPOOL_URL);
-    console.log('Cardpool data:', pool.length, 'rows');
-    console.log('Sample row:', pool[0]);
-    
-    console.log('Fetching B&R data...');
-    const br = await parseCSV(BR_URL);
-    console.log('B&R data:', br.length, 'rows');
-    console.log('Sample row:', br[0]);
-    
-    if (!pool || pool.length === 0) {
-      throw new Error('Cardpool data is empty or failed to load');
+      try{
+        const [pool, br] = await Promise.all([ parseCSV(CARDPOOL_URL), parseCSV(BR_URL) ]);
+        ingestPool(pool);
+        ingestBR(br);
+        if(MAX_TOTAL<1) MAX_TOTAL = 1;
+        initUI();
+        document.getElementById('lastUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`;
+        const aboutEl = document.getElementById('aboutUpdated'); if(aboutEl){ aboutEl.innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`; }
+      }catch(e){ showErr('Data load issue — try refresh. '+(e?.message||e)); console.error(e); }
     }
-    
-    ingestPool(pool);
-    ingestBR(br);
-    
-    console.log('Data ingestion complete. allRows:', allRows.length);
-    console.log('LEGAL_CARDS size:', LEGAL_CARDS.size);
-    console.log('MAX_TOTAL:', MAX_TOTAL);
-    
-    if(MAX_TOTAL<1) MAX_TOTAL = 1;
-    if(allRows.length === 0) {
-      throw new Error('No data rows were processed successfully');
-    }
-    
-    initUI();
-    document.getElementById('lastUpdated').innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`;
-    const aboutEl = document.getElementById('aboutUpdated'); 
-    if(aboutEl){ 
-      aboutEl.innerHTML = `⏱️ <b>Last updated:</b> ${new Date().toLocaleString()}`; 
-    }
-    
-    console.log('Boot complete successfully');
-    
-  }catch(e){ 
-    console.error('Boot failed:', e);
-    const errorMsg = `Data load failed: ${e?.message || e}`;
-    showErr(errorMsg);
-    
-    // Also show in the meta section
-    const meta = document.getElementById('meta');
-    if(meta) {
-      meta.innerHTML = `<span style="color: red;">${errorMsg}</span>`;
-    }
-  }
-}
 
     function showErr(msg){ const el = document.getElementById('err'); el.style.display='block'; el.textContent = (msg && msg.message) ? msg.message : (typeof msg === 'string' ? msg : JSON.stringify(msg)); }
 
@@ -525,7 +507,8 @@ SIDEBOARD:
       const truthy = v => { const s = String(v||'').trim().toLowerCase(); return s && s!=='0' && s!=='false' && s!=='no' && s!=='n' && s!=='na'; };
       for(const r of rows){ const key = normName(r[nameKey]); if(!key) continue; if(bannedKey && truthy(r[bannedKey])) BANNED.add(key); if(restrictedKey && truthy(r[restrictedKey])) RESTRICTED.add(key); }
     }
-function initUI(){
+
+    function initUI(){
       const slider = document.getElementById('threshold');
       const box = document.getElementById('thresholdNumber');
       const label = document.getElementById('thresholdLabel');
@@ -571,7 +554,6 @@ function initUI(){
       document.getElementById('copyLinkBtn').addEventListener('click', copySharableLink);
       initFilterToggle();
     }
-
     function initFilterToggle(){
       const btn = document.getElementById('filtersToggleBtn');
       const filters = document.getElementById('filters');
@@ -622,24 +604,16 @@ function initUI(){
       const close = document.getElementById('releaseClose');
       if(!modal || !body || !open || !close) return;
       const notes = [
-        {title:'v1.5 — Recalibrated Scoring (Sep 2025)', items:[
-          'Major scoring revision to achieve realistic score ranges.',
-          'Target ranges: Spiky decks 20–30, Normal decks 30–40, Spicy brews 50–70, True spice bombs 70–80+.',
-          'Compressed base score contribution by 70% (multiplied by 0.30).',
-          'Reduced per-card bonuses by ~85%: Ultra-jank now +0.15 (was +1.00), Deep-jank +0.08 (was +0.75).',
-          'Steepened density curve significantly: 12 × density³ (was 25 × density^1.1).',
-          'Reduced over-60 bonus from +0.25 to +0.05 per card.'
-        ]},
         {title:'v1.4 — Land‑neutral & Neutral Staples (Sep 2025)', items:[
           'Base score now ignores lands; basics & ABUR duals remain 0 pts.',
           'Staples (4HM Total ≥ 350) are neutral: 0 pts, no penalties.',
           'Sideboard, when included, adds bonuses but never dilutes the denominator.',
           'Over‑60 bonus retained (+0.25 per main‑deck card above 60).',
           'Badges show Ultra‑jank bonuses, Staples neutralized count, and Cards above 60.',
-          'Improved file loader and "SB:" per‑line parsing.'
+          'Improved file loader and “SB:” per‑line parsing.'
         ]},
         {title:'v1.3 — Over‑60 bonus & Mobile filters', items:[
-          '+0.25 per card above 60 and "Cards above 60" badge.',
+          '+0.25 per card above 60 and “Cards above 60” badge.',
           'Mobile hamburger; Threshold & Quick stay visible.',
           'Top‑10 Jankiest links to modal.',
           'Per‑card Jank pts shown as decimals.'
@@ -647,7 +621,7 @@ function initUI(){
         {title:'v1.2 — Ultralight ≤25 & validation', items:[
           'Added Quick ≤25 and Ultralight Jank badge.',
           'Validator: 4 rarely‑played non‑legendary creature threshold raised to ≤25.',
-          'Ignored "Mainboard" token in deck imports.'
+          'Ignored “Mainboard” token in deck imports.'
         ]},
         {title:'v1.1 — Salt removed', items:[
           'Removed saltiness column and Top‑10 saltiest.'
@@ -721,7 +695,8 @@ function initUI(){
 
     function updateQuery(max){ const url = new URL(location.href); if (max != null) url.searchParams.set('max', String(max)); history.replaceState(null, '', url); }
     async function copySharableLink(){ try { await navigator.clipboard.writeText(location.href); alert('Sharable link copied to clipboard!'); } catch(e){ alert('Copy failed. You can manually copy the URL.'); } }
-// === MODAL ===
+
+    // === MODAL ===
     function capWords(s){ return s ? String(s).split(/[\s,;]+/).filter(Boolean).map(x=>x.trim()).map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ') : ''; }
     function typeLineText(row){ const sup = capWords(row.supertypes||row.supersStr); const typ = capWords(row.types||row.typesStr); const sub = capWords(row.subtypes||row.subtypesStr); return `${[sup, typ].filter(Boolean).join(' ')}${sub? ' — '+sub : ''}` || '—'; }
     function showCardModal(row){
@@ -780,7 +755,6 @@ function initUI(){
 
     function tierOf(total){ if (total <= THRESH_ULTRA) return 'Ultra‑Jank'; if (total <= THRESH_DEEP) return 'Deep Jank'; if (total <= THRESH_MED) return 'Medium Jank'; if (total <= THRESH_LIGHT) return 'Light Jank'; if (total <= THRESH_ULTRALIGHT) return 'Ultralight Jank'; return ''; }
 
-    // REVISED SCORING FUNCTION
     function scoreDeck(parsed, includeSide){
       const toRow = new Map(); const nameMap = new Map();
       for(const r of allRows){ const k = normName(r.card); if(!nameMap.has(k)) nameMap.set(k, r.card); if(!toRow.has(k)) toRow.set(k, r); }
@@ -791,121 +765,84 @@ function initUI(){
       for(const item of mainArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Main: ${item.count} × ${item.key}`); continue; } matchedMain.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
       for(const item of sideArr){ const row = toRow.get(item.key); if(!row){ unmatched.push(`Side: ${item.count} × ${item.key}`); continue; } matchedSide.push({ key:item.key, official: nameMap.get(item.key)||item.key, total: Number(row.total)||0, count: item.count }); }
 
-      // REVISED SCORING ALGORITHM
-      const logMax = Math.log(Math.max(1,MAX_TOTAL) + 1); 
-      const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
-      
-      let copiesMain = 0, raw = 0; 
-      for (const m of matchedMain){ 
-        copiesMain += m.count; 
-        const w = ((BASIC_SET.has(m.key) || DUELS_SET.has(m.key) || m.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(m.total); 
-        raw += m.count * w; 
-      }
-      
-      let rawSide = 0; 
-      if (includeSide){ 
-        for (const s of matchedSide){ 
-          const w = ((BASIC_SET.has(s.key) || DUELS_SET.has(s.key) || s.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(s.total); 
-          rawSide += s.count * w; 
-        }
-      }
+      // Jank score (basics/duals/staples ≥350 contribute 0 raw weight)
+      const logMax = Math.log(Math.max(1,MAX_TOTAL) + 1); const weight = (t) => 100 * (1 - (Math.log((t||0)+1) / logMax));
+      let copiesMain = 0, raw = 0; for (const m of matchedMain){ copiesMain += m.count; const w = ((BASIC_SET.has(m.key) || DUELS_SET.has(m.key) || m.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(m.total); raw += m.count * w; }
+      let rawSide = 0; if (includeSide){ for (const s of matchedSide){ const w = ((BASIC_SET.has(s.key) || DUELS_SET.has(s.key) || s.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(s.total); rawSide += s.count * w; }}
 
+      // Land‑neutral denominator: only MAIN non‑land copies define the scale
       const nonLandMain = matchedMain.reduce((a,m)=> a + (isLandKey(m.key)?0:m.count), 0);
       const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
       const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
-      const rawMax = Math.max(1, nonLandMain) * 100;
+      const rawMax = Math.max(1, nonLandMain) * 100; // sideboard NOT in denominator to avoid dilution
       const baseScore = Math.max(0, Math.min(100, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
 
-      // COMPRESSED BASE SCORE (KEY CHANGE)
-      const compressedBase = baseScore * 0.30;
-
-      // REDUCED PER-CARD BONUSES (KEY CHANGE)
-      let lowPlayBonusPts = 0; 
-      let lowPlayCounts = {ultra:0,deep:0,medium:0,light:0,ultralight:0};
+      // Per‑copy adjustments
+      //  • Staples (≥350) are neutral — tracked for a badge only
+      //  • Ultra‑jank bonuses = include SB if checked, else main only
+      let lowPlayBonusPts = 0; let lowPlayCounts = {ultra:0,deep:0,medium:0,light:0,ultralight:0};
       let staplesNeutralizedCount = 0;
 
-      const arr = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
-      for (const m of arr){
-        const isBasic = BASIC_SET.has(m.key); 
-        const isDual = DUELS_SET.has(m.key);
-        if (!isBasic && !isDual && m.total >= OVERPLAYED_THRESHOLD) { 
-          staplesNeutralizedCount += m.count; 
+      // Staples neutralization count (≥350, excluding basics/duals); no points added or removed
+      {
+        const arr = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
+        for (const m of arr){
+          const isBasic = BASIC_SET.has(m.key); const isDual = DUELS_SET.has(m.key);
+          if (!isBasic && !isDual && m.total >= OVERPLAYED_THRESHOLD) { staplesNeutralizedCount += m.count; }
         }
       }
-
+      // Bonuses — include SB if checked
       const bonusArray = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
       for (const m of bonusArray){
-        if (m.total <= THRESH_ULTRA) { lowPlayBonusPts += 0.15 * m.count; lowPlayCounts.ultra += m.count; }
-        else if (m.total <= THRESH_DEEP) { lowPlayBonusPts += 0.08 * m.count; lowPlayCounts.deep += m.count; }
-        else if (m.total <= THRESH_MED) { lowPlayBonusPts += 0.04 * m.count; lowPlayCounts.medium += m.count; }
-        else if (m.total <= THRESH_LIGHT) { lowPlayBonusPts += 0.02 * m.count; lowPlayCounts.light += m.count; }
-        else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += 0.01 * m.count; lowPlayCounts.ultralight += m.count; }
+        if (m.total <= THRESH_ULTRA) { lowPlayBonusPts += 1.00 * m.count; lowPlayCounts.ultra += m.count; }
+        else if (m.total <= THRESH_DEEP) { lowPlayBonusPts += 0.75 * m.count; lowPlayCounts.deep += m.count; }
+        else if (m.total <= THRESH_MED) { lowPlayBonusPts += 0.50 * m.count; lowPlayCounts.medium += m.count; }
+        else if (m.total <= THRESH_LIGHT) { lowPlayBonusPts += 0.25 * m.count; lowPlayCounts.light += m.count; }
+        else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += 0.13 * m.count; lowPlayCounts.ultralight += m.count; }
       }
 
-      // STEEPER DENSITY CURVE (KEY CHANGE)
-      const densityBonus = Math.round(12 * Math.pow(deepDensity / 100, 3.0));
-      
+      const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1));
       const over60 = Math.max(0, copiesMain - 60);
-      const over60Bonus = over60 * 0.05; // REDUCED (was 0.25)
-      
-      // FINAL CALCULATION (KEY CHANGE)
-      const finalScore = Math.max(0, Math.min(100, 
-        compressedBase + lowPlayBonusPts + densityBonus + over60Bonus
-      ));
+      const over60Bonus = over60 * 0.25;
+      const adjustedBase = baseScore + lowPlayBonusPts;
+      const finalScore = Math.max(0, Math.min(100, adjustedBase + bonus + over60Bonus));
 
       // Top jankiest (by per‑copy weight), basics/duals/staples=0
-      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: ((BASIC_SET.has(x.key) || DUELS_SET.has(x.key) || x.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(x.total), total:x.total, count:x.count})); 
-      allForTop.sort((a,b)=> b.w - a.w); 
-      const top10 = allForTop.slice(0,10);
+      const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: ((BASIC_SET.has(x.key) || DUELS_SET.has(x.key) || x.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
 
       // Tier counts (unique card names in main only)
       const seen = new Set(); let ultra=0, deep=0, med=0, light=0, ultralight=0;
       for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_ULTRA) ultra++; else if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; else if(t<=THRESH_ULTRALIGHT) ultralight++; }
 
-      return { 
-        score: Math.round(finalScore), 
-        baseScore: Math.round(compressedBase), 
-        densityBonus, 
-        deepDensity, 
-        top10, 
-        tierCounts:{ultra,deep,med,light,ultralight}, 
-        copiesMain, 
-        over60, 
-        over60Bonus, 
-        staplesNeutralizedCount, 
-        lowPlayBonusPts, 
-        lowPlayCounts, 
-        includeSide 
-      };
+      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light,ultralight}, copiesMain, over60, over60Bonus, staplesNeutralizedCount, lowPlayBonusPts, lowPlayCounts, includeSide };
     }
 
     function renderDeckScore(r){
-      // Jank score with REVISED FLAVOR MESSAGES
+      // Jank score
       const scoreEl = document.getElementById('scoreValue'); const bar = document.getElementById('scoreBar'); const flavor = document.getElementById('scoreFlavor'); const badges = document.getElementById('badges'); const top = document.getElementById('topJank');
       scoreEl.textContent = r.score; bar.style.width = r.score + '%';
       let msg = '';
-      if (r.score >= 75) msg = '🧪 Maximum spice achieved — expect the unexpected.';
-      else if (r.score >= 60) msg = '🌋 The Jank is STRONG with this one.';
-      else if (r.score >= 45) msg = '🌶️ Solidly spicy — a connoisseur's brew.';
+      if (r.score >= 90) msg = '🧪 Maximum spice achieved — expect the unexpected.';
+      else if (r.score >= 70) msg = '🌋 The Jank is STRONG with this one.';
+      else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.';
       else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.';
       else msg = '🛡️ More staple than spice. Dare to jank harder?';
-      if (r.densityBonus >= 8) msg += ' 🧪 Dense spice pocket detected.';
+      if (r.bonus >= 15) msg += ' 🧪 Dense spice pocket detected.';
       flavor.textContent = msg;
-      badges.innerHTML = [
-        '<div>🧿 <b>Ultra-jank (≤1 Total):</b> ' + r.tierCounts.ultra + '</div>',
-        '<div>💀 <b>Deep-jank (≤4 Total):</b> ' + r.tierCounts.deep + '</div>', 
-        '<div>🧪 <b>Medium-jank (≤10 Total):</b> ' + r.tierCounts.med + '</div>',
-        '<div>🔥 <b>Light-jank (≤20 Total):</b> ' + r.tierCounts.light + '</div>',
-        '<div>🧊 <b>Ultralight-jank (≤25 Total):</b> ' + r.tierCounts.ultralight + '</div>',
-        '<div>📈 <b>Jank Density:</b> ' + r.deepDensity + '% of maindeck</div>',
-        '<div>➕ <b>Density bonus added:</b> +' + r.densityBonus + ' (max +12)</div>',
-        '<div>🧱 <b>Staples (≥350) neutralized:</b> ' + r.staplesNeutralizedCount + ' (0 pts each)</div>',
-        '<div>✨ <b>Ultra-jank bonuses' + (r.includeSide ? ' (incl. SB)' : '') + ':</b> +' + r.lowPlayBonusPts.toFixed(2) + ' (≤1×' + r.lowPlayCounts.ultra + ', ≤4×' + r.lowPlayCounts.deep + ', ≤10×' + r.lowPlayCounts.medium + ', ≤20×' + r.lowPlayCounts.light + ', ≤25×' + r.lowPlayCounts.ultralight + ')</div>',
-        '<div>🧾 <b>Counted copies (main):</b> ' + r.copiesMain + '</div>',
-        '<div>📦 <b>Cards above 60:</b> ' + r.over60 + ' (+' + r.over60Bonus.toFixed(2) + ')</div>'
-      ].join('');
+      badges.innerHTML = `
+        <div>🧿 <b>Ultra‑jank (≤1 Total):</b> ${r.tierCounts.ultra}</div>
+        <div>💀 <b>Deep‑jank (≤4 Total):</b> ${r.tierCounts.deep}</div>
+        <div>🧪 <b>Medium‑jank (≤10 Total):</b> ${r.tierCounts.med}</div>
+        <div>🔥 <b>Light‑jank (≤20 Total):</b> ${r.tierCounts.light}</div>
+        <div>🧊 <b>Ultralight‑jank (≤25 Total):</b> ${r.tierCounts.ultralight}</div>
+        <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div>
+        <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +25)</div>
+        <div>🧱 <b>Staples (≥350) neutralized:</b> ${r.staplesNeutralizedCount} (0 pts each)</div>
+        <div>✨ <b>Ultra-jank bonuses${r.includeSide ? ' (incl. SB)' : ''}:</b> +${r.lowPlayBonusPts.toFixed(2)} (≤1×${r.lowPlayCounts.ultra}, ≤4×${r.lowPlayCounts.deep}, ≤10×${r.lowPlayCounts.medium}, ≤20×${r.lowPlayCounts.light}, ≤25×${r.lowPlayCounts.ultralight})</div>
+        <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>
+        <div>📦 <b>Cards above 60:</b> ${r.over60} (+${r.over60Bonus.toFixed(2)})</div>`;
       top.innerHTML = '';
-      for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `<a href=\"#\" class=\"cardlink\" data-key=\"${t.key}\">${t.name}</a>${badge?`<span class=\"tag\"> ${badge}</span>`:''} <span class=\"small mono\">(${(t.w/60).toFixed(2)} pts/copy)</span>`; top.appendChild(li); }
+      for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `<a href=\"#\" class=\"cardlink\" data-key=\"${t.key}\">${t.name}</a>${badge?`<span class=\\\"tag\\\"> ${badge}</span>`:''} <span class=\"small mono\">(${(t.w/60).toFixed(2)} pts/copy)</span>`; top.appendChild(li); }
     }
 
     function validateDeck(parsed){
@@ -929,7 +866,7 @@ function initUI(){
       for(const [key,count] of totals.entries()){
         if (BASIC_SET.has(key)) continue;
         const row = LEGAL_CARDS.get(key);
-        if(!row){ errors.push(`Not in 4HM card pool: "${NAME_MAP.get(key)||key}"`); continue; }
+        if(!row){ errors.push(`Not in 4HM card pool: “${NAME_MAP.get(key)||key}”`); continue; }
         const disp = NAME_MAP.get(key) || String(row.name||row.card||key);
         if (HARD_BANNED.has(key) || BANNED.has(key)) errors.push(`BANNED card: ${disp}`);
         const isRestr = RESTRICTED.has(key) || String(row.supertypes||'').toLowerCase().includes('legendary') || typeHas(String(row.types),'enchantment');
