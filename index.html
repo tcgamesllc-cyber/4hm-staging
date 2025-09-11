@@ -431,6 +431,7 @@ SIDEBOARD:
         .toLowerCase()
         .replace(/[^a-z0-9]/g,'');
     }
+    
     function parseCSV(url){
       return new Promise((resolve) => {
         try{
@@ -450,7 +451,8 @@ SIDEBOARD:
           });
         }catch(e){ console.error(e); showErr(e?.message||e); resolve([]); }
       });
-    }); }); }
+    }
+
     function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i').test(t||''); }
     function isLegendaryCard(row){ return String(row.supertypes||'').toLowerCase().includes('legendary'); }
     function isLegendaryCreature(row){ return isLegendaryCard(row) && typeHas(String(row.types),'creature'); }
@@ -904,7 +906,7 @@ SIDEBOARD:
       const seen = new Set(); let deep=0, med=0, light=0, ultralight=0;
       for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; else if(t<=THRESH_ULTRALIGHT) ultralight++; }
 
-      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light,ultralight}, copiesMain, over60, over60Bonus, staplesNeutralizedCount, lowPlayBonusPts, lowPlayCounts, includeSide };
+      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{deep,med,light,ultralight}, copiesMain, over60, over60Bonus, staplesNeutralizedCount, lowPlayBonusPts, lowPlayCounts, includeSide };
     }
 
     function renderDeckScore(r){
@@ -917,7 +919,7 @@ SIDEBOARD:
       else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.';
       else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.';
       else msg = '🛡️ More staple than spice. Dare to jank harder?';
-      if (r.bonus >= 15) msg += ' 🧪 Dense spice pocket detected.';
+      if (r.bonus >= 10) msg += ' 🧪 Dense spice pocket detected.';
       flavor.textContent = msg;
       badges.innerHTML = `
         <div>🧿 <b>Ultra‑jank (≤1 Total):</b> ${r.tierCounts.ultra}</div>
@@ -926,7 +928,7 @@ SIDEBOARD:
         <div>🔥 <b>Light‑jank (≤20 Total):</b> ${r.tierCounts.light}</div>
         <div>🧊 <b>Ultralight‑jank (≤25 Total):</b> ${r.tierCounts.ultralight}</div>
         <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div>
-        <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +15)</div>
+        <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +12)</div>
         <div>🧱 <b>Staples (≥350) neutralized:</b> ${r.staplesNeutralizedCount} (0 pts each)</div>
         <div>✨ <b>Ultra-jank bonuses${r.includeSide ? ' (incl. SB)' : ''}:</b> +${r.lowPlayBonusPts.toFixed(2)} (≤1×${r.lowPlayCounts.ultra}, ≤4×${r.lowPlayCounts.deep}, ≤10×${r.lowPlayCounts.medium}, ≤20×${r.lowPlayCounts.light}, ≤25×${r.lowPlayCounts.ultralight})</div>
         <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>
