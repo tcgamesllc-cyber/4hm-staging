@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -775,8 +776,7 @@ SIDEBOARD:
       const deepCopies = matchedMain.filter(x => x.total <= THRESH_LIGHT).reduce((a,b)=> a + b.count, 0);
       const deepDensity = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
       const rawMax = Math.max(1, nonLandMain) * 100; // sideboard NOT in denominator to avoid dilution
-      const baseScoreRaw = ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100;
-const baseScore = Math.min(85, Math.max(0, baseScoreRaw)); // capped at 85
+      const baseScore = Math.min(85, Math.max(0, ((raw + (includeSide ? rawSide : 0)) / rawMax) * 100));
 
       // Per‑copy adjustments
       //  • Staples (≥350) are neutral — tracked for a badge only
@@ -795,19 +795,14 @@ const baseScore = Math.min(85, Math.max(0, baseScoreRaw)); // capped at 85
       // Bonuses — include SB if checked
       const bonusArray = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
       for (const m of bonusArray){
-  if (m.total <= THRESH_ULTRA)       { lowPlayBonusPts += 0.25 * m.count; lowPlayCounts.ultra += m.count; }
-  else if (m.total <= THRESH_DEEP)   { lowPlayBonusPts += 0.15 * m.count; lowPlayCounts.deep += m.count; }
-  else if (m.total <= THRESH_MED)    { lowPlayBonusPts += 0.10 * m.count; lowPlayCounts.medium += m.count; }
-  else if (m.total <= THRESH_LIGHT)  { lowPlayBonusPts += 0.05 * m.count; lowPlayCounts.light += m.count; }
-  else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += 0.03 * m.count; lowPlayCounts.ultralight += m.count; }
-}
-        else if (m.total <= THRESH_DEEP) { lowPlayBonusPts += 0.75 * m.count; lowPlayCounts.deep += m.count; }
-        else if (m.total <= THRESH_MED) { lowPlayBonusPts += 0.50 * m.count; lowPlayCounts.medium += m.count; }
-        else if (m.total <= THRESH_LIGHT) { lowPlayBonusPts += 0.25 * m.count; lowPlayCounts.light += m.count; }
-        else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += 0.13 * m.count; lowPlayCounts.ultralight += m.count; }
+        if (m.total <= THRESH_ULTRA) { lowPlayBonusPts += 0.05 * m.count; lowPlayCounts.ultra += m.count; }
+        else if (m.total <= THRESH_DEEP) { lowPlayBonusPts += 0.15 * m.count; lowPlayCounts.deep += m.count; }
+        else if (m.total <= THRESH_MED) { lowPlayBonusPts += 0.10 * m.count; lowPlayCounts.medium += m.count; }
+        else if (m.total <= THRESH_LIGHT) { lowPlayBonusPts += 0.05 * m.count; lowPlayCounts.light += m.count; }
+        else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += 0.03 * m.count; lowPlayCounts.ultralight += m.count; }
       }
 
-      const bonus = Math.round(15 * Math.pow(deepDensity / 100, 1.25) // reduced cap and steeper curve);
+      const bonus = Math.round(15 * Math.pow(deepDensity / 100, 1.25) // reduced cap);
       const over60 = Math.max(0, copiesMain - 60);
       const over60Bonus = over60 * 0.25;
       const adjustedBase = baseScore + lowPlayBonusPts;
