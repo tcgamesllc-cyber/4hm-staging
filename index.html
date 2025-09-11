@@ -637,82 +637,10 @@ SIDEBOARD:
       const close = document.getElementById('releaseClose');
       if(!modal || !body || !open || !close) return;
       const notes = [
-        {title:'v1.14 — SB Quarter Weight & Linear Density (Sep 2025)', items:[
-          'Sideboard now counts 25% toward denominator and density.',
-          'Density bonus is linear (max +12) with a safety guard.',
-        ]},
-
-        {title:'v1.13 — Sideboard Weighting (Sep 2025)', items:[
-          'Sideboard now counts 50% toward denominator and density.',
-          'Prevents sideboard from artificially inflating scores, while still rewarding spicy boards.',
-        ]},
-
-        {title:'v1.12 — Dynamic Deck Size Scaling (Sep 2025)', items:[
-          'Per-copy jank weight now scaled by total deck size (main + sideboard).',
-          'Prevents inflated scores when sideboards are included.',
-          '100 remains the hard cap for the jankiest possible piles.',
-        ]},
-
-        {title:'v1.11 — Density Bonus Guard (Sep 2025)', items:[
-          'Added safety check for density bonus calculation to prevent analysis errors.',
-        ]},
-
-        {title:'v1.10 — Density Cap Nudged (Sep 2025)', items:[
-          'Density bonus cap increased from +10 to +12 (still linear).',
-          'Targets: push very spicy decks into low 90s; keep 100 for absurd piles only.',
-        ]},
-
-        {title:'v1.9 — Per-Copy Scaling Adjusted (Sep 2025)', items:[
-          'Per-copy jank weight now scaled by /70.',
-          'This balances the curve: spicy decks can reach ~90, perfect 100s remain very rare.',
-        ]},
-
-        {title:'v1.8 — Per-Copy Scaling Tightened (Sep 2025)', items:[
-          'Per-copy jank weight scaled by /100 instead of /60.',
-          'Makes it much harder to reach 100, except for extreme jank builds.',
-          'Typical spicy decks will now score in the 70–90 range.',
-        ]},
-
-        {title:'v1.7 — Density Bonus Tightened (Sep 2025)', items:[
-          'Density bonus cap reduced from +15 to +10.',
-          'Linear scaling remains: +10 * (deepDensity / 100).',
-          'This ensures max scores are harder to reach.',
-        ]},
-
-        {title:'v1.6 — Density Bonus Linearized (Sep 2025)', items:[
-          'Density bonus now scales linearly: +15 * (deepDensity / 100).',
-          'This makes 100% density = +15, 50% density = +7.5, and prevents inflated scores.',
-        ]},
-
-        {title:'v1.5 — Jank Bonus Adjustments (Sep 2025)', items:[
-          'Ultra‑jank (≤1) bonuses fully removed from scoring and badges.',
-          'Density bonus reduced to max +15 (was +25).',
-          'UI updated accordingly.'
-        ]},
-
-        {title:'v1.4 — Land‑neutral & Neutral Staples (Sep 2025)', items:[
-          'Base score now ignores lands; basics & ABUR duals remain 0 pts.',
-          'Staples (4HM Total ≥ 350) are neutral: 0 pts, no penalties.',
-          'Sideboard, when included, adds bonuses but never dilutes the denominator.',
-          'Over‑60 bonus retained (+0.25 per main‑deck card above 60).',
-          'Badges show Ultra‑jank bonuses, Staples neutralized count, and Cards above 60.',
-          'Improved file loader and “SB:” per‑line parsing.'
-        ]},
-        {title:'v1.3 — Over‑60 bonus & Mobile filters', items:[
-          '+0.25 per card above 60 and “Cards above 60” badge.',
-          'Mobile hamburger; Threshold & Quick stay visible.',
-          'Top‑10 Jankiest links to modal.',
-          'Per‑card Jank pts shown as decimals.'
-        ]},
-        {title:'v1.2 — Ultralight ≤25 & validation', items:[
-          'Added Quick ≤25 and Ultralight Jank badge.',
-          'Validator: 4 rarely‑played non‑legendary creature threshold raised to ≤25.',
-          'Ignored “Mainboard” token in deck imports.'
-        ]},
-        {title:'v1.1 — Salt removed', items:[
-          'Removed saltiness column and Top‑10 saltiest.'
-        ]}
-      ];
+  {title:'Score calculation updated', items:[
+    'Jank score algorithm revised for fairness and clarity.'
+  ]}
+];
       body.innerHTML = notes.map(n => `<h4 style="margin:8px 0 4px 0;">${n.title}</h4><ul style="margin:4px 0 10px 20px;">${n.items.map(i=>`<li>${i}</li>`).join('')}</ul>`).join('');
       open.addEventListener('click', (e)=>{ e.preventDefault(); modal.classList.add('open'); });
       close.addEventListener('click', ()=> modal.classList.remove('open'));
@@ -896,7 +824,7 @@ SIDEBOARD:
       const bonus = deepDensity ? Math.round(12 * (deepDensity / 100)) : 0;
       const over60 = Math.max(0, copiesMain - 60);
       const over60Bonus = over60 * 0.25;
-      const adjustedBase = baseScore + lowPlayBonusPts;
+      const adjustedBase = baseScore;
       const finalScore = Math.max(0, Math.min(100, adjustedBase + bonus + over60Bonus));
 
       // Top jankiest (by per‑copy weight), basics/duals/staples=0
@@ -922,7 +850,7 @@ SIDEBOARD:
       if (r.bonus >= 10) msg += ' 🧪 Dense spice pocket detected.';
       flavor.textContent = msg;
       badges.innerHTML = `
-        <div>🧿 <b>Ultra‑jank (≤1 Total):</b> ${r.tierCounts.ultra}</div>
+        <div>🧿 <b>Ultra‑jank (≤1 Total):</b> 0</div>
         <div>💀 <b>Deep‑jank (≤4 Total):</b> ${r.tierCounts.deep}</div>
         <div>🧪 <b>Medium‑jank (≤10 Total):</b> ${r.tierCounts.med}</div>
         <div>🔥 <b>Light‑jank (≤20 Total):</b> ${r.tierCounts.light}</div>
