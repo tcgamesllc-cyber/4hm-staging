@@ -797,14 +797,18 @@ SIDEBOARD:
         }
       }
       // Bonuses — include SB if checked
+      // Adjusted per-copy bonus constants
+      const ULTRA = 0.85, DEEP = 0.60, MED = 0.45, LIGHT = 0.22, ULTRALIGHT = 0.11;
+
       const bonusArray = includeSide ? matchedMain.concat(matchedSide) : matchedMain;
       for (const m of bonusArray){
-        if (m.total <= THRESH_ULTRA) { lowPlayBonusPts += 1.00 * m.count; lowPlayCounts.ultra += m.count; }
-        else if (m.total <= THRESH_DEEP) { lowPlayBonusPts += 0.75 * m.count; lowPlayCounts.deep += m.count; }
-        else if (m.total <= THRESH_MED) { lowPlayBonusPts += 0.50 * m.count; lowPlayCounts.medium += m.count; }
-        else if (m.total <= THRESH_LIGHT) { lowPlayBonusPts += 0.25 * m.count; lowPlayCounts.light += m.count; }
-        else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += 0.13 * m.count; lowPlayCounts.ultralight += m.count; }
-      }
+  if (m.total <= THRESH_ULTRA) { lowPlayBonusPts += ULTRA * m.count; lowPlayCounts.ultra += m.count; }
+  else if (m.total <= THRESH_DEEP) { lowPlayBonusPts += DEEP * m.count; lowPlayCounts.deep += m.count; }
+  else if (m.total <= THRESH_MED) { lowPlayBonusPts += MED * m.count; lowPlayCounts.medium += m.count; }
+  else if (m.total <= THRESH_LIGHT) { lowPlayBonusPts += LIGHT * m.count; lowPlayCounts.light += m.count; }
+  else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += ULTRALIGHT * m.count; lowPlayCounts.ultralight += m.count; }
+}
+
 
       const densityCap = 15;              // was 25
       const densityExp = 1.25;            // steeper curve
