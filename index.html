@@ -857,7 +857,6 @@ function typeHas(t, word){ return new RegExp(`(?:^|,|\\s)${word}(?:,|\\s|$)`, 'i
         <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div>
         <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +12)</div>
         <div>🧱 <b>Staples (≥350) neutralized:</b> ${r.staplesNeutralizedCount} (0 pts each)</div>
-        <div>✨ <b>${r.includeSide ? ' (incl. SB)' : ''}:</b> +${r.lowPlayBonusPts.toFixed(2)} (≤1×${r.lowPlayCounts.ultra}, ≤4×${r.lowPlayCounts.deep}, ≤10×${r.lowPlayCounts.medium}, ≤20×${r.lowPlayCounts.light}, ≤25×${r.lowPlayCounts.ultralight})</div>
         <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>
         <div>📦 <b>Cards above 60:</b> ${r.over60} (+${r.over60Bonus.toFixed(2)})</div>`;
       top.innerHTML = '';
