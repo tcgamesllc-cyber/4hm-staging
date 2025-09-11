@@ -801,7 +801,9 @@ SIDEBOARD:
         else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += 0.13 * m.count; lowPlayCounts.ultralight += m.count; }
       }
 
-      const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1));
+      const densityCap = 15;              // was 25
+      const densityExp = 1.25;            // steeper curve
+      const bonus = Math.round(densityCap * Math.pow(deepDensity / 100, densityExp));
       const over60 = Math.max(0, copiesMain - 60);
       const over60Bonus = over60 * 0.25;
       const adjustedBase = baseScore + lowPlayBonusPts;
