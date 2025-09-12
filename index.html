@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -604,7 +605,10 @@ SIDEBOARD:
       const close = document.getElementById('releaseClose');
       if(!modal || !body || !open || !close) return;
       const notes = [
-        {title:'v1.4 — Land‑neutral & Neutral Staples (Sep 2025)', items:[
+        {title:'v1.5 — Score calculation updated (Sep 11 2025)', items:[
+    'Scoring revised: linear density (max +12), no Ultra bonuses, sideboard impact capped at +2.'
+  ]},
+        {title:'v1.4 — Land‑neutral & Neutral Staples', items:[
           'Base score now ignores lands; basics & ABUR duals remain 0 pts.',
           'Staples (4HM Total ≥ 350) are neutral: 0 pts, no penalties.',
           'Sideboard, when included, adds bonuses but never dilutes the denominator.',
@@ -632,6 +636,7 @@ SIDEBOARD:
       close.addEventListener('click', ()=> modal.classList.remove('open'));
       modal.addEventListener('click', (e)=>{ if(e.target.id==='releaseModal') modal.classList.remove('open'); });
     }
+
 
     function redraw(){ const abs = Number(document.getElementById('thresholdNumber').value)||0; renderTable(abs, document.getElementById('setFilter').value || ''); }
 
@@ -756,6 +761,7 @@ SIDEBOARD:
     function tierOf(total){ if (total <= THRESH_ULTRA) return 'Ultra‑Jank'; if (total <= THRESH_DEEP) return 'Deep Jank'; if (total <= THRESH_MED) return 'Medium Jank'; if (total <= THRESH_LIGHT) return 'Light Jank'; if (total <= THRESH_ULTRALIGHT) return 'Ultralight Jank'; return ''; }
 
     function scoreDeck(parsed, includeSide){
+      const SB_WEIGHT = 0.25; // sideboard counts quarter when included
       const toRow = new Map(); const nameMap = new Map();
       for(const r of allRows){ const k = normName(r.card); if(!nameMap.has(k)) nameMap.set(k, r.card); if(!toRow.has(k)) toRow.set(k, r); }
       function mapToArr(m){ return Array.from(m.entries()).map(([key,count])=>({key, count})); }
@@ -801,20 +807,28 @@ SIDEBOARD:
         else if (m.total <= THRESH_ULTRALIGHT) { lowPlayBonusPts += 0.13 * m.count; lowPlayCounts.ultralight += m.count; }
       }
 
-      const bonus = Math.round(25 * Math.pow(deepDensity / 100, 1.1));
+      const bonus = Math.round(12 * (deepDensity / 100));
       const over60 = Math.max(0, copiesMain - 60);
       const over60Bonus = over60 * 0.25;
-      const adjustedBase = baseScore + lowPlayBonusPts;
+      const adjustedBase = baseScore;
       const finalScore = Math.max(0, Math.min(100, adjustedBase + bonus + over60Bonus));
 
-      // Top jankiest (by per‑copy weight), basics/duals/staples=0
+            const deepDensityMain = copiesMain ? Math.round(100 * deepCopies / copiesMain) : 0;
+      const baseScoreMain = Math.max(0, Math.min(100, (raw / (Math.max(1, nonLandMain) * 100)) * 100));
+      const densityBonusMain = Math.round(12 * (deepDensityMain / 100));
+      const over60Main = Math.max(0, copiesMain - 60);
+      const over60BonusMain = over60Main * 0.25;
+      const finalMainOnly = Math.max(0, Math.min(100, baseScoreMain + densityBonusMain + over60BonusMain));
+      const SB_MAX_DELTA = 2;
+      const finalScoreCapped = includeSide ? Math.min(100, Math.min(finalScore, finalMainOnly + SB_MAX_DELTA)) : finalScore;
+// Top jankiest (by per‑copy weight), basics/duals/staples=0
       const allForTop = [...matchedMain].map(x => ({key:x.key, name:x.official, w: ((BASIC_SET.has(x.key) || DUELS_SET.has(x.key) || x.total >= OVERPLAYED_THRESHOLD)) ? 0 : weight(x.total), total:x.total, count:x.count})); allForTop.sort((a,b)=> b.w - a.w); const top10 = allForTop.slice(0,10);
 
       // Tier counts (unique card names in main only)
-      const seen = new Set(); let ultra=0, deep=0, med=0, light=0, ultralight=0;
-      for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_ULTRA) ultra++; else if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; else if(t<=THRESH_ULTRALIGHT) ultralight++; }
+      const seen = new Set(); let deep=0, med=0, light=0, ultralight=0;
+      for(const m of matchedMain){ if(seen.has(m.key)) continue; seen.add(m.key); const t=m.total; if(t<=THRESH_DEEP) deep++; else if(t<=THRESH_MED) med++; else if(t<=THRESH_LIGHT) light++; else if(t<=THRESH_ULTRALIGHT) ultralight++; }
 
-      return { score: Math.round(finalScore), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{ultra,deep,med,light,ultralight}, copiesMain, over60, over60Bonus, staplesNeutralizedCount, lowPlayBonusPts, lowPlayCounts, includeSide };
+      return { score: Math.round(finalScoreCapped), baseScore: Math.round(baseScore), bonus, deepDensity, top10, tierCounts:{deep,med,light,ultralight}, copiesMain, over60, over60Bonus, staplesNeutralizedCount, lowPlayBonusPts, lowPlayCounts, includeSide };
     }
 
     function renderDeckScore(r){
@@ -827,19 +841,17 @@ SIDEBOARD:
       else if (r.score >= 50) msg = '🌶️ Solidly spicy — a connoisseur’s brew.';
       else if (r.score >= 30) msg = '🧯 Respectable heat with room to get weird.';
       else msg = '🛡️ More staple than spice. Dare to jank harder?';
-      if (r.bonus >= 15) msg += ' 🧪 Dense spice pocket detected.';
+      if (r.bonus >= 10) msg += ' 🧪 Dense spice pocket detected.';
       flavor.textContent = msg;
       badges.innerHTML = `
-        <div>🧿 <b>Ultra‑jank (≤1 Total):</b> ${r.tierCounts.ultra}</div>
-        <div>💀 <b>Deep‑jank (≤4 Total):</b> ${r.tierCounts.deep}</div>
+<div>💀 <b>Deep‑jank (≤4 Total):</b> ${r.tierCounts.deep}</div>
         <div>🧪 <b>Medium‑jank (≤10 Total):</b> ${r.tierCounts.med}</div>
         <div>🔥 <b>Light‑jank (≤20 Total):</b> ${r.tierCounts.light}</div>
         <div>🧊 <b>Ultralight‑jank (≤25 Total):</b> ${r.tierCounts.ultralight}</div>
-        <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of maindeck</div>
-        <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +25)</div>
+        <div>📈 <b>Jank Density:</b> ${r.deepDensity}% of deck</div>
+        <div>➕ <b>Density bonus added:</b> +${r.bonus} (max +12)</div>
         <div>🧱 <b>Staples (≥350) neutralized:</b> ${r.staplesNeutralizedCount} (0 pts each)</div>
-        <div>✨ <b>Ultra-jank bonuses${r.includeSide ? ' (incl. SB)' : ''}:</b> +${r.lowPlayBonusPts.toFixed(2)} (≤1×${r.lowPlayCounts.ultra}, ≤4×${r.lowPlayCounts.deep}, ≤10×${r.lowPlayCounts.medium}, ≤20×${r.lowPlayCounts.light}, ≤25×${r.lowPlayCounts.ultralight})</div>
-        <div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>
+<div>🧾 <b>Counted copies (main):</b> ${r.copiesMain}</div>
         <div>📦 <b>Cards above 60:</b> ${r.over60} (+${r.over60Bonus.toFixed(2)})</div>`;
       top.innerHTML = '';
       for (const t of r.top10){ const li = document.createElement('li'); const badge = tierOf(t.total); li.innerHTML = `<a href=\"#\" class=\"cardlink\" data-key=\"${t.key}\">${t.name}</a>${badge?`<span class=\\\"tag\\\"> ${badge}</span>`:''} <span class=\"small mono\">(${(t.w/60).toFixed(2)} pts/copy)</span>`; top.appendChild(li); }
